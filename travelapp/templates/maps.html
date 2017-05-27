@@ -13,15 +13,38 @@
     <div id="map"></div>
     <script>
       function initMap() {
-        var uluru = {lat: 42.2780, lng: -83.7382};
+        var uluru = {lat: 41.4993, lng: -81.6944};
         var map = new google.maps.Map(document.getElementById('map'), {
-          zoom: 15,
+          zoom: 6,
           center: uluru
         });
+
+        /*
         var marker = new google.maps.Marker({
           position: uluru,
           map: map
         });
+        */
+
+        var locations = [
+            {lat: 42.278067, lng: -83.738278},
+            {lat: 41.788920, lng: -87.599700},
+            {lat: 42.728887, lng: -73.680616}
+        ];
+
+        var location_names = [
+            "University of Michigan",
+            "University of Chicago",
+            "Rensselaer Polytechnic Institute"
+        ]
+
+        for (var idx = 0; idx < locations.length; idx++) {
+            new google.maps.Marker({
+                position: locations[idx],
+                map: map
+            });
+        }
+
       }
     </script>
     <script async defer
