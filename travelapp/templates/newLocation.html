@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>New Location</title>
+</head>
+<body>
+    <form action="/newLocation" method=post>
+        <fieldset>
+            <legend>Location Form</legend>
+            <div>
+
+                {{ form.title.label }} {{ form.title}} <br>
+                {{ form.latitude.label }} {{ form.latitude}} <br>
+                {{ form.longitude.label }} {{ form.longitude}} <br>
+                {{ form.arrivalDate.label }} {{ form.arrivalDate}} <br>
+                {{ form.departureDate.label }} {{ form.departureDate}} <br>
+                {{ form.website.label }} {{ form.website}} <br>
+
+                <input type="submit"/>
+            </div>
+
+        </fieldset>
+    </form>
+</body>
+</html>
