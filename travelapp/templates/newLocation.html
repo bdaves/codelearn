@@ -5,6 +5,7 @@
 </head>
 <body>
     <form action="/newLocation" method=post>
+        {{ form.csrf_token }}
         <fieldset>
             <legend>Location Form</legend>
             <div>
