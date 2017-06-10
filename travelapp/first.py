@@ -8,7 +8,7 @@ from . import dbutil
 import json
 from datetime import datetime, date
 
-USER_ID = 8
+USER_ID = 1
 USERNAME = "bdaves"
 
 app = Flask(__name__)
