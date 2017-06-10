@@ -25,6 +25,20 @@ def insert_location(cursor, userid, title, latitude, longitude, arrivalDate, dep
 
     cursor.connection.commit()
 
+def hash_password(salt, password):
+    return hashlib.sha256((salt + password).encode('utf-8')).hexdigest()
+
+def validate_user(cursor, username, password):
+    user = get_user(cursor, username)
+    if not user:
+        return False
+
+    salt = user['salt']
+    expected_hash = user['hashed_password']
+
+    hashed_pw = hash_password(salt, password)
+
+    return expected_hash == hashed_pw
 
 def insert_user(cursor, username, firstname, lastname, email, password):
     sql = """
@@ -33,7 +47,7 @@ def insert_user(cursor, username, firstname, lastname, email, password):
     """
     salt = ''.join(random.sample(CHAR_SET*64, 64))
 
-    hashed_password = hashlib.sha256((salt + password).encode('utf-8')).hexdigest()
+    hashed_password = hash_password(salt, password)
 
     guid = uuid.uuid1().hex
 
@@ -69,15 +83,17 @@ def get_user(cursor, username):
 
 
 def get_locations(cursor, username):
-    user_id = get_user(cursor, username)['user_id']
-
     sql = """
-        SELECT location_id, user_id, guid, title, latitude, longitude, arrivalDate, departureDate, url
+        SELECT locations.location_id, locations.user_id, locations.guid, locations.title,
+               locations.latitude, locations.longitude, locations.arrivalDate, 
+               locations.departureDate, locations.url
         FROM locations
-        where user_id=%s
+        JOIN users USING (user_id)
+        where users.username=%s
     """
 
-    cursor.execute(sql, user_id)
+    print("db username", username, len(username), str(username))
+    cursor.execute(sql, username)
 
     location_list = []
     location = cursor.fetchone()
@@ -94,6 +110,8 @@ def get_locations(cursor, username):
             "url": location[8]
         })
         location = cursor.fetchone()
+
+    print("found " + str(len(location_list)) + " locations")
 
     return location_list
 

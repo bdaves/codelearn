@@ -1,4 +1,4 @@
-from flask import Flask, request, render_template, url_for, redirect
+from flask import Flask, request, render_template, url_for, redirect, session, escape
 import os
 from flask_wtf import FlaskForm
 from wtforms import StringField, DecimalField, DateField, PasswordField, validators
@@ -21,12 +21,56 @@ def jsonDefault(obj):
 
     return json.dumps(obj, default=jsonDefault)
 
+class LoginForm(FlaskForm):
+    username = StringField('Username',
+        [validators.InputRequired('  *Please enter your username'), validators.Length(max=64)])
+    password = PasswordField('Password',
+        [validators.InputRequired('  *Please enter your password'), validators.Length(max=64)])
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    form = LoginForm()
+    if form.validate_on_submit():
+        username = session['username'] = request.form['username']
+        conn = cursor = None
+        try:
+            conn = dbutil.connect()
+            cursor = conn.cursor()
+            password = request.form['password']
+            if dbutil.validate_user(cursor, username, password):
+                return redirect(url_for('index'))
+            else:
+                # TODO: Need to mark that username/password did not agree
+                pass
+        finally:
+            if cursor:
+                cursor.close()
+            if conn:
+                conn.close()
+
+
+
+    return render_template('login.html', form=form)
+
 @app.route('/')
 def index():
-    conn = dbutil.connect()
-    cursor = conn.cursor()
-    location_data = dbutil.get_locations(cursor, USERNAME)
-    return render_template('maps.html', APIKEY=cfg.GOOGLE_MAPS_API, location_data=json.dumps(location_data, default=jsonDefault))
+    if 'username' in session:
+        conn = cursor = None
+        try:
+            conn = dbutil.connect()
+            cursor = conn.cursor()
+            username = escape(session['username'])
+            print("username", username)
+            location_data = dbutil.get_locations(cursor, username)
+        finally:
+            if cursor:
+                cursor.close()
+            if conn:
+                conn.close()
+
+        return render_template('maps.html', APIKEY=cfg.GOOGLE_MAPS_API, location_data=json.dumps(location_data, default=jsonDefault))
+    else:
+        return redirect(url_for('login'))
 
 
 class LocationForm(FlaskForm):
@@ -88,3 +132,8 @@ def addUser():
         dbutil.insert_user(cursor, username, firstname, lastname, email, password)
         return redirect(url_for('index'))
     return render_template('newUser.html', form=form)
+
+@app.route('/logout')
+def logout():
+    session.pop('username')
+    return redirect(url_for('login'))

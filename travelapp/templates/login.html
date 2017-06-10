@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Login</title>
+</head>
+<body>
+    {% from "formhelpers.html" import render_field %}
+    <form action="{{ url_for('login') }}" method=post>
+        {{ form.csrf_token }}
+        <fieldset>
+            <legend>Login</legend>
+            <div>
+                {{ render_field(form.username) }}
+                {{ render_field(form.password) }}
+
+                <input type="submit"/>
+            </div>
+
+        </fieldset>
+
+        <fieldset>
+            <legend>New User</legend>
+
+            <a href="{{ url_for('addUser')}}">Register as a new user.</a>
+        </fieldset>
+    </form>
+</body>
+</html>
