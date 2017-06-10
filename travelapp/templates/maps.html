@@ -13,51 +13,61 @@
     <div id="map"></div>
     <script>
       function initMap() {
-        var uluru = {lat: 41.4993, lng: -81.6944};
-        var MichU = new google.maps.LatLng(42.278067, -83.738278);
-        var ChicU = new google.maps.LatLng(41.788920, -87.599700);
-        var RPI = new google.maps.LatLng(42.728887, -73.680616);
-        var start = new google.maps.LatLng(42.6987, -71.1351);
+        var location_data = {{location_data | safe}};
+
+        var location_arr = [];
+        var name_arr = [];
+        var average_latitude = 0;
+        var average_longitude = 0;
+        var latitude, longitude, name;
+        for (var idx = 0; idx < location_data.length; idx++) {
+            latitude = location_data[idx]["latitude"];
+            longitude = location_data[idx]["longitude"];
+            name = location_data[idx]["title"];
+            location_arr.push(new google.maps.LatLng(latitude, longitude));
+            name_arr.push(name);
+            average_longitude += longitude;
+            average_latitude += latitude;
+        }
+        average_latitude /= idx;
+        average_longitude /= idx;
+
+        var middle = {lat: average_latitude, lng: average_longitude};
         var map = new google.maps.Map(document.getElementById('map'), {
           zoom: 6,
-          center: uluru
+          center: middle
         });
         var directionsService = new google.maps.DirectionsService;
         var directionsDisplay = new google.maps.DirectionsRenderer({
           map: map
         });
-        /*
-        var marker = new google.maps.Marker({
-          position: uluru,
-          map: map
-        });
-        */
-        //North andover - {lat: 42.6987, lng: -71.1351}
+        
+        // var marker = new google.maps.Marker({
+        //   position: uluru,
+        //   map: map
+        // });
 
-        var locations = [
-            MichU,
-            ChicU,
-            RPI
 
-        ];
+        // for (var idx = 0; idx < location_data.length; idx++) {
+        //     new google.maps.Marker({
+        //         position: location_arr[idx],
+        //         title: name_arr[idx],
+        //         map: map
+        //     });
+        // }
 
-        var location_names = [
-            "University of Michigan",
-            "University of Chicago",
-            "Rensselaer Polytechnic Institute"
-        ];
+        var waypoints = [];
+        if (location_arr.length > 2) {
+            for (var idx=1; idx < location_arr.length-1; idx++) {
+                waypoints.push({
+                    location: location_arr[idx],
+                    stopover: true
+                });
+            }
+        }
 
-        /*for (var idx = 0; idx < locations.length; idx++) {
-            new google.maps.Marker({
-                position: locations[idx],
-                title: location_names[idx],
-                map: map
-            });
-        }*/
-
-        calculateAndDisplayRoute(directionsService, directionsDisplay, start, ChicU, 
-          [{location: RPI, stopover: true}, 
-           {location: MichU, stopover: true}]
+        calculateAndDisplayRoute(directionsService, directionsDisplay, location_arr[0], location_arr[location_arr.length-1], 
+          waypoints
           );
       }
 
@@ -81,4 +91,5 @@
     </script>
   </body>
   <a href="/newLocation">Add location!</a>
+  <a href="/newUser">Add User!</a>
 </html>

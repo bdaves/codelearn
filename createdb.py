@@ -1,4 +1,5 @@
 import pymysql
+import travelapp.config as cfg
 
 CREATE_USERS_TABLE = """
     CREATE TABLE IF NOT EXISTS users(
@@ -67,7 +68,9 @@ CREATE_USER = """
     '438a858f29e03aa31aecc8b97d425769a0aaf5c09f44b8aa439b8615a795805a',
     'hE5cRD7Z0sO86KYrpacy9NMIrqySH61j5cYcCziD4c6vD4T883iJdA3mdOM9iJdf' );
 """
-conn = pymysql.connect(host='localhost', user='codelearn', passwd='codelearn', db='codelearn')
+
+cfg.printconfig()
+conn = pymysql.connect(host=cfg.DB_HOST, user=cfg.DB_USERNAME, passwd=cfg.DB_PASSWORD, db=cfg.DB_DATABASE)
 
 cur = conn.cursor()
 

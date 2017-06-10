@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>New User</title>
+</head>
+<body>
+    {% from "formhelpers.html" import render_field %}
+    <form action="/newUser" method=post>
+        {{ form.csrf_token }}
+        <fieldset>
+            <legend>User Form</legend>
+            <div>
+
+                {{ render_field(form.firstname) }}
+                {{ render_field(form.username) }}
+                {{ render_field(form.password) }}
+                {{ render_field(form.confirmpwd) }}
+                {{ render_field(form.email) }}
+                {{ render_field(form.confirmemail) }}
+
+                <input type="submit"/>
+            </div>
+
+        </fieldset>
+    </form>
+</body>
+</html>
