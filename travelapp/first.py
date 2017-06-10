@@ -1,4 +1,4 @@
-from flask import Flask, request, render_template, url_for, redirect, session, escape
+from flask import Flask, request, render_template, url_for, redirect, session, escape, flash
 import os
 from flask_wtf import FlaskForm
 from wtforms import StringField, DecimalField, DateField, PasswordField, validators
@@ -40,15 +40,13 @@ def login():
             if dbutil.validate_user(cursor, username, password):
                 return redirect(url_for('index'))
             else:
-                # TODO: Need to mark that username/password did not agree
-                pass
+                flash("Username and password do not match.")
+
         finally:
             if cursor:
                 cursor.close()
             if conn:
                 conn.close()
-
-
 
     return render_template('login.html', form=form)
 
@@ -129,10 +127,12 @@ def addUser():
         conn = dbutil.connect()
         cursor = conn.cursor()
         dbutil.insert_user(cursor, username, firstname, lastname, email, password)
+        session['username'] = username
         return redirect(url_for('index'))
     return render_template('newUser.html', form=form)
 
 @app.route('/logout')
 def logout():
-    session.pop('username')
+    if 'username' in session:
+        session.pop('username')
     return redirect(url_for('login'))

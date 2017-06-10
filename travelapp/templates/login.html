@@ -7,9 +7,13 @@
     {% from "formhelpers.html" import render_field %}
     <form action="{{ url_for('login') }}" method=post>
         {{ form.csrf_token }}
+
         <fieldset>
             <legend>Login</legend>
             <div>
+                {% for message in get_flashed_messages() %}
+                    <div class="error">{{ message }}</div>
+                {% endfor %}
                 {{ render_field(form.username) }}
                 {{ render_field(form.password) }}
 
