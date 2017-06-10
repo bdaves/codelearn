@@ -59,8 +59,7 @@ def index():
         try:
             conn = dbutil.connect()
             cursor = conn.cursor()
-            username = escape(session['username'])
-            print("username", username)
+            username = escape(session['username']).encode('utf-8')
             location_data = dbutil.get_locations(cursor, username)
         finally:
             if cursor:

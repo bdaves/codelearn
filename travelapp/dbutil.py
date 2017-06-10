@@ -89,10 +89,9 @@ def get_locations(cursor, username):
                locations.departureDate, locations.url
         FROM locations
         JOIN users USING (user_id)
-        where users.username=%s
+        where users.username = %s
     """
 
-    print("db username", username, len(username), str(username))
     cursor.execute(sql, username)
 
     location_list = []
@@ -110,8 +109,6 @@ def get_locations(cursor, username):
             "url": location[8]
         })
         location = cursor.fetchone()
-
-    print("found " + str(len(location_list)) + " locations")
 
     return location_list
 
