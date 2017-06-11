@@ -17,10 +17,50 @@ CREATE_USERS_TABLE = """
 
 """
 
+CREATE_PERMISSION_TABLE = """
+    CREATE TABLE IF NOT EXISTS permissions(
+            permission_id INT NOT NULL AUTO_INCREMENT,
+            name VARCHAR(32) NOT NULL,
+            can_read BOOLEAN DEFAULT 0,
+            can_write BOOLEAN DEFAULT 0,
+            can_delete BOOLEAN DEFAULT 0,
+            can_modify_group BOOLEAN DEFAULT 0,
+            PRIMARY KEY ( permission_id ));
+
+"""
+
+CREATE_GROUP_TABLE = """
+    CREATE TABLE IF NOT EXISTS groups(
+            group_id INT NOT NULL AUTO_INCREMENT,
+            user_id INT NOT NULL,
+            permission_id INT NOT NULL,
+            PRIMARY KEY ( group_id ),
+            FOREIGN KEY ( user_id )
+                REFERENCES users( user_id )
+                ON DELETE RESTRICT,
+            FOREIGN KEY ( permission_id )
+                REFERENCES permissions( permission_id )
+                ON DELETE RESTRICT );
+
+"""
+
+CREATE_TRIP_TABLE = """
+    CREATE TABLE IF NOT EXISTS trips(
+            trip_id INT NOT NULL AUTO_INCREMENT,
+            group_id INT NOT NULL,
+            guid CHAR(32) NOT NULL,
+            title VARCHAR(128) NOT NULL,
+            PRIMARY KEY ( trip_id ),
+            FOREIGN KEY ( group_id )
+                REFERENCES groups( group_id )
+                ON DELETE RESTRICT );
+
+"""
+
 CREATE_LOCATION_TABLE = """
     CREATE TABLE IF NOT EXISTS locations( 
             location_id INT NOT NULL AUTO_INCREMENT,
-            user_id INT NOT NULL,
+            trip_id INT NOT NULL,
             guid CHAR(32) NOT NULL,
             title VARCHAR(128) NOT NULL, 
             latitude FLOAT NOT NULL,
@@ -29,45 +69,34 @@ CREATE_LOCATION_TABLE = """
             departureDate DATE,
             url VARCHAR(256), 
             PRIMARY KEY ( location_id ),
-            FOREIGN KEY ( user_id )
-                REFERENCES users( user_id )
+            FOREIGN KEY ( trip_id )
+                REFERENCES trips( trip_id )
                 ON DELETE RESTRICT );
 """
 
-CREATE_TRIP_TABLE = """
-    CREATE TABLE IF NOT EXISTS trips(
-            trip_id INT NOT NULL AUTO_INCREMENT,
-            user_id INT NOT NULL,
-            guid CHAR(32) NOT NULL,
-            title VARCHAR(128) NOT NULL,
-            PRIMARY KEY ( trip_id ),
-            FOREIGN KEY ( user_id )
-                REFERENCES users( user_id )
-                ON DELETE RESTRICT );
 
-"""
 
 CREATE_TRIP_LOCATION_TABLE = """
     CREATE TABLE IF NOT EXISTS trip_locations(
-            trip_id INT NOT NULL,
             location_id INT NOT NULL,
             trip_order INT NOT NULL,
-            FOREIGN KEY ( trip_id )
-                REFERENCES trips( trip_id )
-                ON DELETE RESTRICT,
             FOREIGN KEY ( location_id )
                 REFERENCES locations( location_id )
                 ON DELETE RESTRICT );
 """
 
-CREATE_USER = """
-    DELETE FROM users where username='dummy';
-    INSERT INTO users (guid, username, firstname, lastname, email, hashed_password, 
-    salt) VALUES ('d853add444a911e7bb72acbc32871233', 'dummy', 'Dum', 'My', 
-    'dummy@parityerror.com',
-    '438a858f29e03aa31aecc8b97d425769a0aaf5c09f44b8aa439b8615a795805a',
-    'hE5cRD7Z0sO86KYrpacy9NMIrqySH61j5cYcCziD4c6vD4T883iJdA3mdOM9iJdf' );
-"""
+def insert_permission(cursor, name, read, write, delete, modify):
+    sql = """
+        INSERT INTO permissions (name, can_read, can_write, can_delete, can_modify_group)
+        VALUES (%s, %s, %s, %s, %s)
+    """
+
+    cursor.execute(sql, (name, read, write, delete, modify))
+
+    cursor.connection.commit()
+
+
+
 
 cfg.printconfig()
 conn = pymysql.connect(host=cfg.DB_HOST, user=cfg.DB_USERNAME, passwd=cfg.DB_PASSWORD, db=cfg.DB_DATABASE)
@@ -75,11 +104,18 @@ conn = pymysql.connect(host=cfg.DB_HOST, user=cfg.DB_USERNAME, passwd=cfg.DB_PAS
 cur = conn.cursor()
 
 cur.execute(CREATE_USERS_TABLE)
-cur.execute(CREATE_LOCATION_TABLE)
+cur.execute(CREATE_PERMISSION_TABLE)
+cur.execute(CREATE_GROUP_TABLE)
 cur.execute(CREATE_TRIP_TABLE)
+cur.execute(CREATE_LOCATION_TABLE)
 cur.execute(CREATE_TRIP_LOCATION_TABLE)
-#cur.execute(CREATE_USER)
+
 conn.commit()
+
+insert_permission(cur, "OWNER", 1, 1, 1, 1)
+insert_permission(cur, "MODERATOR", 1, 1, 0, 1)
+insert_permission(cur, "MEMBER", 1, 1, 0, 0)
+insert_permission(cur, "READER", 1, 0, 0, 0)
 
 cur.close()
 
