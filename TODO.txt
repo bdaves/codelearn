@@ -1,0 +1,42 @@
+Users
+-----
+
+- Send verification email to confirm
+- Link to accept email verification.
+- Validation username not already in use
+- Verify email address not already in use
+- New verifications table [user_id, verification_token, time_created]
+- Age out non-verified users after 30 days
+
+Trips
+-----
+
+- Create trips
+- Edit trips
+- Delete trips
+- Add locations to trip
+- Reorder location in a trip
+
+- Trips belong to a group
+
+
+Locations
+---------
+
+- Edit location
+- Delete location
+
+Social
+------
+
+- Share a trip
+   - Permissions list, and ability to have others access.
+
+Permissions
+-----------
+
+- Owner (Read, Edit, Delete)
+- Administrator (Read, Edit)
+- Reader (Read)
+
+group_id, user_id, permission_id
