@@ -14,11 +14,20 @@ def connect():
 def get_guid():
     return uuid.uuid1().hex
 
+
 def generate_salt():
     return ''.join(random.sample(CHAR_SET * 64, 64))
 
+
 def hash_password(salt, password):
     return hashlib.sha256((salt + password).encode('utf-8')).hexdigest()
+
+
+def utf_encode(value):
+    if (isinstance(value, str)):
+        return value.encode('utf-8')
+
+    return value
 
 
 def insert_location(cursor, tripid, title, latitude, longitude, arrivalDate, departureDate, website):
@@ -27,8 +36,11 @@ def insert_location(cursor, tripid, title, latitude, longitude, arrivalDate, dep
         VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
     """
 
-    cursor.execute(sql, (tripid, get_guid(), title, latitude, longitude, arrivalDate, departureDate, website))
+    guid = get_guid()
+    cursor.execute(sql, (tripid, guid, title, latitude, longitude, arrivalDate, departureDate, website))
     cursor.connection.commit()
+
+    return guid
 
 def insert_trip(cursor, group_id, title):
     sql = """
@@ -36,8 +48,11 @@ def insert_trip(cursor, group_id, title):
         VALUES (%s, %s, %s)
     """
 
-    cursor.execute(sql, (group_id, get_guid(), title))
+    guid = get_guid()
+    cursor.execute(sql, (group_id, guid, title))
     cursor.connection.commit()
+
+    return guid
 
 
 def validate_user(cursor, username, password):
@@ -62,9 +77,12 @@ def insert_user(cursor, username, firstname, lastname, email, password):
 
     hashed_password = hash_password(salt, password)
 
-    cursor.execute(sql, (get_guid(), username, firstname, lastname, email, hashed_password, salt))
+    guid = get_guid()
 
+    cursor.execute(sql, (guid, username, firstname, lastname, email, hashed_password, salt))
     cursor.connection.commit()
+
+    return guid
 
 
 def get_user(cursor, username):
@@ -104,7 +122,7 @@ def get_locations(cursor, username):
         where users.username = %s
     """
 
-    cursor.execute(sql, username)
+    cursor.execute(sql, username.encode("utf-8"))
 
     location_list = []
     location = cursor.fetchone()
@@ -126,3 +144,57 @@ def get_locations(cursor, username):
 
 
 
+def get_trips(cursor, username):
+    sql = """
+        SELECT trips.trip_id, trips.group_id, trips.guid, trips.title
+        FROM trips
+        JOIN groups USING (group_id)
+        JOIN users USING (user_id)
+        WHERE users.username = %s
+    """
+
+    username = utf_encode(username)
+    cursor.execute(sql, username)
+
+    trips = []
+
+    trip = cursor.fetchone()
+    while (trip != None):
+        trips.append( {
+            "trip_id": trip[0],
+            "group_id": trip[1],
+            "guid": trip[2],
+            "title": trip[3]
+        })
+        trip = cursor.fetchone()
+
+    return trips
+
+
+def get_groups(cursor, username, permission_name):
+    sql = """
+        SELECT groups.group_id, groups.guid, groups.name
+        FROM groups
+        FROM users USING (user_id)
+        FROM permissions USING (permission_id)
+        WHERE users.username = %s
+            AND permission.name = %s
+    """
+
+    username = utf_encode(username)
+    permission_name = utf_encode(permission_name)
+
+    cursor.execute(sql, (username, permission_name))
+
+    groups = []
+
+    group = cursor.fetchone()
+    while (group != None):
+        groups.append({
+            "group_id": group[0],
+            "guid": group[1],
+            "name": group[2]
+        })
+        group = cursor.fetchone()
+
+    return groups
