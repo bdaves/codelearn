@@ -5,7 +5,7 @@
 </head>
 <body>
     {% from "formhelpers.html" import render_field %}
-    <form action="/newLocation" method=post>
+    <form action="{{ url_for('addLocation', guid=form.trip_guid.data)}}" method=post>
         {{ form.csrf_token }}
         <fieldset>
             <legend>Location Form</legend>
@@ -17,7 +17,9 @@
                 {{ render_field(form.arrivalDate) }}
                 {{ render_field(form.departureDate) }}
                 {{ render_field(form.website) }}
-                
+                {{ form.trip_guid }}
+
+
                 <input type="submit"/>
             </div>
 

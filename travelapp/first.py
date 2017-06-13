@@ -1,7 +1,7 @@
-from flask import Flask, request, render_template, url_for, redirect, session, escape
+from flask import Flask, request, render_template, url_for, redirect, session, escape, flash
 import os
 from flask_wtf import FlaskForm
-from wtforms import StringField, DecimalField, DateField, PasswordField, validators
+from wtforms import StringField, DecimalField, DateField, PasswordField, SelectField, SubmitField, HiddenField, validators
 from wtforms.fields.html5 import URLField, EmailField
 from . import config as cfg
 from . import dbutil 
@@ -59,17 +59,37 @@ def index():
         try:
             conn = dbutil.connect()
             cursor = conn.cursor()
-            username = escape(session['username']).encode('utf-8')
-            location_data = dbutil.get_locations(cursor, username)
+            username = session['username']
+            trips = dbutil.get_trips(cursor, username)
         finally:
             if cursor:
                 cursor.close()
             if conn:
                 conn.close()
 
-        return render_template('maps.html', APIKEY=cfg.GOOGLE_MAPS_API, location_data=json.dumps(location_data, default=jsonDefault))
+        return render_template('trips.html', trips=trips)
     else:
         return redirect(url_for('login'))
+
+
+@app.route('/trip/<guid>')
+def trip(guid):
+    if 'username' in session:
+        conn = cursor = None
+        try:
+            conn = dbutil.connect()
+            cursor = conn.cursor()
+            location_data = dbutil.get_locations(cursor, guid)
+            trip = dbutil.get_trip(cursor, guid)
+            return render_template('maps.html', APIKEY=cfg.GOOGLE_MAPS_API, location_data=json.dumps(location_data, default=jsonDefault), trip=trip)
+        finally:
+            if cursor:
+                cursor.close()
+            if conn:
+                conn.close()
+    else:
+        return redirect(url_for('login'))
+
 
 
 class LocationForm(FlaskForm):
@@ -82,10 +102,11 @@ class LocationForm(FlaskForm):
     arrivalDate = DateField('Arrival Date', [validators.optional()])
     departureDate = DateField('Departure Date', [validators.optional()])
     website = URLField('Location Website URL')
+    trip_guid = HiddenField('Trip Guid')
 
-@app.route('/newLocation', methods=['GET', 'POST'])
-def addLocation():
-    form = LocationForm()
+@app.route('/newLocation/<guid>', methods=['GET', 'POST'])
+def addLocation(guid):
+    form = LocationForm(request.values, trip_guid=guid)
     if form.validate_on_submit():
         title = form.title.data
         lat = form.latitude.data
@@ -93,10 +114,15 @@ def addLocation():
         arrivalDate = form.arrivalDate.data
         departureDate = form.departureDate.data
         url = form.website.data
-        conn = dbutil.connect()
-        cursor = conn.cursor()
-        dbutil.insert_location(cursor, USER_ID, title, lat, lng, arrivalDate, departureDate, url)
-        return redirect(url_for('index'))
+        trip_guid = form.trip_guid.data
+        if (trip_guid == guid):
+            conn = dbutil.connect()
+            cursor = conn.cursor()
+            dbutil.insert_location(cursor, trip_guid, title, lat, lng, arrivalDate, departureDate, url)
+            return redirect(url_for('trip', guid=trip_guid))
+        else:
+            flash("invalid location for this trip")
+
     return render_template('newLocation.html', form=form)
 
 class UserForm(FlaskForm):
@@ -131,6 +157,53 @@ def addUser():
         dbutil.insert_user(cursor, username, firstname, lastname, email, password)
         return redirect(url_for('index'))
     return render_template('newUser.html', form=form)
+
+class GroupForm(FlaskForm):
+    name = StringField('Group Name', 
+        [validators.InputRequired('  *Please create a group name'), validators.Length(max=128)])
+
+
+@app.route('/newGroup', methods=['GET', 'POST'])
+def addGroup():
+    form = GroupForm()
+    if form.validate_on_submit():
+        name = form.name.data
+        conn = dbutil.connect()
+        cursor = conn.cursor()
+        guid = dbutil.insert_group(cursor, name)
+        username = session['username']
+        dbutil.insert_group_member(cursor, guid, username, "OWNER")
+        return redirect(url_for('index'))
+    return render_template('newGroup.html', form=form)
+
+
+
+class TripForm(FlaskForm):
+    title = StringField('Trip Title', 
+        [validators.InputRequired('  *Please input a trip title'), validators.Length(max=128)])
+    group = SelectField('Group')
+
+    def set_groups(self, groups):
+        self.group.choices = groups
+
+@app.route('/newTrip', methods=['GET', 'POST'])
+def addTrip():
+    form = TripForm()
+    conn = dbutil.connect()
+    cursor = conn.cursor()
+    username = session['username']
+    if form.validate_on_submit():
+        title = form.title.data
+        group = form.group.data
+        dbutil.insert_trip(cursor, group, title)
+        return redirect(url_for('index'))
+    else:
+        groups = dbutil.get_groups(cursor, username)
+        choices = [(group['guid'], group['name']) for group in groups]
+        form.set_groups(choices)
+
+    return render_template('newGroup.html', form=form)
+
 
 @app.route('/logout')
 def logout():

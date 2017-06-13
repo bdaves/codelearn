@@ -9,7 +9,16 @@
     </style>
   </head>
   <body>
-    <h3>My Google Maps Demo</h3>
+    <h3>{{ trip.title }}</h3>
+    {% with messages = get_flashed_messages() %}
+      {% if messages %}
+      <ul class=flashes>
+      {% for message in messages %}
+        <li>{{ message }}</li>
+      {% endfor %}
+      </ul>
+      {% endif %}
+    {% endwith %}
     <div id="map"></div>
     <script>
       function initMap() {
@@ -20,17 +29,20 @@
         var average_latitude = 0;
         var average_longitude = 0;
         var latitude, longitude, name;
-        for (var idx = 0; idx < location_data.length; idx++) {
-            latitude = location_data[idx]["latitude"];
-            longitude = location_data[idx]["longitude"];
-            name = location_data[idx]["title"];
-            location_arr.push(new google.maps.LatLng(latitude, longitude));
-            name_arr.push(name);
-            average_longitude += longitude;
-            average_latitude += latitude;
+        if (location_data.length > 0) {
+          for (var idx = 0; idx < location_data.length; idx++) {
+              latitude = location_data[idx]["latitude"];
+              longitude = location_data[idx]["longitude"];
+              name = location_data[idx]["title"];
+              location_arr.push(new google.maps.LatLng(latitude, longitude));
+              name_arr.push(name);
+              average_longitude += longitude;
+              average_latitude += latitude;
+          }
+          average_latitude /= idx;
+          average_longitude /= idx;
+
         }
-        average_latitude /= idx;
-        average_longitude /= idx;
 
         var middle = {lat: average_latitude, lng: average_longitude};
         var map = new google.maps.Map(document.getElementById('map'), {
@@ -48,27 +60,28 @@
         // });
 
 
-        // for (var idx = 0; idx < location_data.length; idx++) {
-        //     new google.maps.Marker({
-        //         position: location_arr[idx],
-        //         title: name_arr[idx],
-        //         map: map
-        //     });
-        // }
-
         var waypoints = [];
-        if (location_arr.length > 2) {
+        if (location_arr.length >= 2) {
             for (var idx=1; idx < location_arr.length-1; idx++) {
                 waypoints.push({
                     location: location_arr[idx],
                     stopover: true
                 });
             }
+            calculateAndDisplayRoute(directionsService, directionsDisplay, location_arr[0], location_arr[location_arr.length-1], 
+            waypoints
+          );
+        } else {
+          for (var idx = 0; idx < location_data.length; idx++) {
+            new google.maps.Marker({
+                position: location_arr[idx],
+                title: name_arr[idx],
+                map: map
+            });
+          }
         }
 
-        calculateAndDisplayRoute(directionsService, directionsDisplay, location_arr[0], location_arr[location_arr.length-1], 
-          waypoints
-          );
+        
       }
 
       function calculateAndDisplayRoute(directionsService, directionsDisplay, pointA, pointB, waypoints) {
@@ -90,6 +103,6 @@
     src="https://maps.googleapis.com/maps/api/js?key={{APIKEY}}&callback=initMap">
     </script>
   </body>
-  <a href="/newLocation">Add location!</a>
+  <a href="/newLocation/{{ trip.guid }}">Add location!</a>
   <a href="/newUser">Add User!</a>
 </html>

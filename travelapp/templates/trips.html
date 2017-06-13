@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Trips</title>
+</head>
+<body>
+    <ul>
+    {% for trip in trips %}
+        <li>
+            <a href="{{ url_for('trip', guid=trip.guid) }}">{{ trip.title }}</a>
+        </li>
+    {% endfor %}
+    </ul>
+</body>
+</html>

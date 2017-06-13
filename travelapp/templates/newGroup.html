@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>New Group</title>
+</head>
+<body>
+    {% from "formhelpers.html" import render_field %}
+    <form action="/newGroup" method=post>
+        {{ form.csrf_token }}
+        <fieldset>
+            <legend>Trip Form</legend>
+            <div>
+
+                {{ render_field(form.name) }}
+                
+                <input type="submit"/>
+            </div>
+
+        </fieldset>
+    </form>
+</body>
+</html>

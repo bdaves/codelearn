@@ -30,29 +30,29 @@ def utf_encode(value):
     return value
 
 
-def insert_location(cursor, tripid, title, latitude, longitude, arrivalDate, departureDate, website):
+def insert_location(cursor, trip_guid, title, latitude, longitude, arrivalDate, departureDate, website):
     sql = """
         INSERT INTO locations (trip_id, guid, title, latitude, longitude, arrivalDate, departureDate, url)
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+        VALUES ((SELECT trip_id FROM trips where trips.guid=%s), %s, %s, %s, %s, %s, %s, %s)
     """
 
-    guid = get_guid()
-    cursor.execute(sql, (tripid, guid, title, latitude, longitude, arrivalDate, departureDate, website))
+    location_guid = get_guid()
+    cursor.execute(sql, (trip_guid, location_guid, title, latitude, longitude, arrivalDate, departureDate, website))
     cursor.connection.commit()
 
-    return guid
+    return location_guid
 
-def insert_trip(cursor, group_id, title):
+def insert_trip(cursor, group_guid, title):
     sql = """
         INSERT INTO trips (group_id, guid, title)
-        VALUES (%s, %s, %s)
+        VALUES ((SELECT group_id from groups where groups.guid = %s), %s, %s)
     """
 
-    guid = get_guid()
-    cursor.execute(sql, (group_id, guid, title))
+    trip_guid = get_guid()
+    cursor.execute(sql, (group_guid, trip_guid, utf_encode(title)))
     cursor.connection.commit()
 
-    return guid
+    return trip_guid
 
 
 def validate_user(cursor, username, password):
@@ -112,17 +112,17 @@ def get_user(cursor, username):
     }
 
 
-def get_locations(cursor, username):
+def get_locations(cursor, trip_guid):
     sql = """
         SELECT locations.location_id, locations.trip_id, locations.guid, locations.title,
                locations.latitude, locations.longitude, locations.arrivalDate, 
                locations.departureDate, locations.url
-        FROM locations
-        JOIN users USING (user_id)
-        where users.username = %s
+        FROM locations 
+        JOIN trips USING (trip_id)
+        where trips.guid = %s
     """
 
-    cursor.execute(sql, username.encode("utf-8"))
+    cursor.execute(sql, utf_encode(trip_guid))
 
     location_list = []
     location = cursor.fetchone()
@@ -147,9 +147,10 @@ def get_locations(cursor, username):
 def get_trips(cursor, username):
     sql = """
         SELECT trips.trip_id, trips.group_id, trips.guid, trips.title
-        FROM trips
+        FROM users
+        JOIN group_members USING (user_id)
         JOIN groups USING (group_id)
-        JOIN users USING (user_id)
+        JOIN trips USING (group_id)
         WHERE users.username = %s
     """
 
@@ -170,21 +171,78 @@ def get_trips(cursor, username):
 
     return trips
 
+def get_trip(cursor, trip_guid):
 
-def get_groups(cursor, username, permission_name):
+    sql = """
+        SELECT trips.trip_id, trips.group_id, trips.guid, trips.title
+        FROM trips
+        WHERE trips.guid = %s
+    """
+
+    cursor.execute(sql, utf_encode(trip_guid))
+
+    trip = cursor.fetchone()
+
+    return {
+        "trip_id": trip[0],
+        "group_id": trip[1],
+        "guid": trip[2],
+        "title": trip[3]
+        }
+
+
+
+
+
+def insert_group(cursor, name):
+    sql = """
+        INSERT INTO groups ( guid, name )
+        VALUES (%s, %s)
+    """
+
+    name = utf_encode(name)
+    guid = get_guid()
+
+    cursor.execute(sql, (guid, name))
+
+    cursor.connection.commit()
+
+    return guid
+
+def insert_group_member(cursor, group_guid, username, permission_name):
+    sql = """
+        INSERT INTO group_members ( group_id, user_id, permission_id )
+        SELECT groups.group_id, users.user_id, permissions.permission_id
+        FROM groups JOIN users JOIN permissions
+        WHERE groups.guid = %s
+            AND users.username = %s
+            AND permissions.name = %s;
+    """ 
+
+    group_guid = utf_encode(group_guid)
+    username = utf_encode(username)
+    permission_name = utf_encode(permission_name)
+    
+
+    cursor.execute(sql, (group_guid, username, permission_name))
+
+    cursor.connection.commit()
+
+
+
+
+def get_groups(cursor, username):
     sql = """
         SELECT groups.group_id, groups.guid, groups.name
-        FROM groups
-        FROM users USING (user_id)
-        FROM permissions USING (permission_id)
+        FROM users
+        JOIN group_members USING (user_id)
+        JOIN groups USING (group_id)
         WHERE users.username = %s
-            AND permission.name = %s
     """
 
     username = utf_encode(username)
-    permission_name = utf_encode(permission_name)
 
-    cursor.execute(sql, (username, permission_name))
+    cursor.execute(sql, username)
 
     groups = []
 

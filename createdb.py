@@ -32,14 +32,27 @@ CREATE_PERMISSION_TABLE = """
 CREATE_GROUP_TABLE = """
     CREATE TABLE IF NOT EXISTS groups(
             group_id INT NOT NULL AUTO_INCREMENT,
+            guid CHAR(32) NOT NULL, 
+            name VARCHAR(128) NOT NULL,
+            PRIMARY KEY ( group_id ));
+
+"""
+
+
+CREATE_GROUP_MEMBER_TABLE = """
+    CREATE TABLE IF NOT EXISTS group_members(
+            group_id INT NOT NULL,
             user_id INT NOT NULL,
             permission_id INT NOT NULL,
-            PRIMARY KEY ( group_id ),
-            FOREIGN KEY ( user_id )
-                REFERENCES users( user_id )
-                ON DELETE RESTRICT,
+            PRIMARY KEY ( group_id, user_id ),
             FOREIGN KEY ( permission_id )
                 REFERENCES permissions( permission_id )
+                ON DELETE RESTRICT,
+            FOREIGN KEY ( group_id )
+                REFERENCES groups( group_id )
+                ON DELETE RESTRICT,
+            FOREIGN KEY ( user_id )
+                REFERENCES users( user_id )
                 ON DELETE RESTRICT );
 
 """
@@ -106,6 +119,7 @@ cur = conn.cursor()
 cur.execute(CREATE_USERS_TABLE)
 cur.execute(CREATE_PERMISSION_TABLE)
 cur.execute(CREATE_GROUP_TABLE)
+cur.execute(CREATE_GROUP_MEMBER_TABLE)
 cur.execute(CREATE_TRIP_TABLE)
 cur.execute(CREATE_LOCATION_TABLE)
 cur.execute(CREATE_TRIP_LOCATION_TABLE)
