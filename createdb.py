@@ -50,10 +50,10 @@ CREATE_GROUP_MEMBER_TABLE = """
                 ON DELETE RESTRICT,
             FOREIGN KEY ( group_id )
                 REFERENCES groups( group_id )
-                ON DELETE RESTRICT,
+                ON DELETE CASCADE,
             FOREIGN KEY ( user_id )
                 REFERENCES users( user_id )
-                ON DELETE RESTRICT );
+                ON DELETE CASCADE );
 
 """
 
@@ -66,7 +66,7 @@ CREATE_TRIP_TABLE = """
             PRIMARY KEY ( trip_id ),
             FOREIGN KEY ( group_id )
                 REFERENCES groups( group_id )
-                ON DELETE RESTRICT );
+                ON DELETE CASCADE );
 
 """
 
@@ -84,7 +84,7 @@ CREATE_LOCATION_TABLE = """
             PRIMARY KEY ( location_id ),
             FOREIGN KEY ( trip_id )
                 REFERENCES trips( trip_id )
-                ON DELETE RESTRICT );
+                ON DELETE CASCADE );
 """
 
 
@@ -95,7 +95,7 @@ CREATE_TRIP_LOCATION_TABLE = """
             trip_order INT NOT NULL,
             FOREIGN KEY ( location_id )
                 REFERENCES locations( location_id )
-                ON DELETE RESTRICT );
+                ON DELETE CASCADE );
 """
 
 def insert_permission(cursor, name, read, write, delete, modify):

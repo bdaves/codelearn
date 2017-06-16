@@ -10,6 +10,7 @@
   </head>
   <body>
     <h3>{{ trip.title }}</h3>
+    <h5><a href="{{ url_for('index') }}">Back to Trips</a>
     {% with messages = get_flashed_messages() %}
       {% if messages %}
       <ul class=flashes>
@@ -26,8 +27,10 @@
 
         var location_arr = [];
         var name_arr = [];
-        var average_latitude = 0;
-        var average_longitude = 0;
+        var min_latitude = 90;
+        var max_latitude = -90;
+        var min_longitude = 180;
+        var max_longitude = -180;
         var latitude, longitude, name;
         if (location_data.length > 0) {
           for (var idx = 0; idx < location_data.length; idx++) {
@@ -36,13 +39,16 @@
               name = location_data[idx]["title"];
               location_arr.push(new google.maps.LatLng(latitude, longitude));
               name_arr.push(name);
-              average_longitude += longitude;
-              average_latitude += latitude;
+              min_latitude = Math.min(min_latitude, latitude);
+              min_longitude = Math.min(min_longitude, longitude);
+              max_latitude = Math.max(max_latitude, latitude);
+              max_longitude = Math.max(max_longitude, longitude);
           }
-          average_latitude /= idx;
-          average_longitude /= idx;
 
         }
+
+        var average_latitude = (min_latitude + max_latitude) / 2;
+        var average_longitude = (min_longitude + max_longitude) / 2;
 
         var middle = {lat: average_latitude, lng: average_longitude};
         var map = new google.maps.Map(document.getElementById('map'), {
@@ -104,5 +110,4 @@
     </script>
   </body>
   <a href="/newLocation/{{ trip.guid }}">Add location!</a>
-  <a href="/newUser">Add User!</a>
 </html>

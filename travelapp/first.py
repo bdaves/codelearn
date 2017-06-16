@@ -181,28 +181,37 @@ def addGroup():
 class TripForm(FlaskForm):
     title = StringField('Trip Title', 
         [validators.InputRequired('  *Please input a trip title'), validators.Length(max=128)])
-    group = SelectField('Group')
+    group = SelectField('Group', coerce=str)
 
     def set_groups(self, groups):
         self.group.choices = groups
 
 @app.route('/newTrip', methods=['GET', 'POST'])
 def addTrip():
-    form = TripForm()
+    form = TripForm(request.form)
     conn = dbutil.connect()
     cursor = conn.cursor()
     username = session['username']
+    groups = dbutil.get_groups(cursor, username)
+    choices = [(group['guid'], group['name']) for group in groups]
+    form.set_groups(choices)
     if form.validate_on_submit():
         title = form.title.data
         group = form.group.data
-        dbutil.insert_trip(cursor, group, title)
-        return redirect(url_for('index'))
-    else:
-        groups = dbutil.get_groups(cursor, username)
-        choices = [(group['guid'], group['name']) for group in groups]
-        form.set_groups(choices)
+        trip_guid = dbutil.insert_trip(cursor, group, title)
+        return redirect(url_for('trip', guid=trip_guid))
+        
 
-    return render_template('newGroup.html', form=form)
+    return render_template('newTrip.html', form=form)
+
+@app.route('/deleteTrip/<guid>', methods=['GET', 'POST'])
+def deleteTrip(guid):
+    conn = dbutil.connect()
+    cursor = conn.cursor()
+    dbutil.delete_trip(cursor, guid)
+    cursor.close()
+    conn.close()
+    return redirect(url_for('index'))
 
 
 @app.route('/logout')
