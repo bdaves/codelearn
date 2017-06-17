@@ -8,6 +8,7 @@ sys.path.append(os.path.join(home, CONFIG_DIR))
 import _config as cfg
 
 GOOGLE_MAPS_API = cfg.GOOGLE_MAPS_API
+GOOGLE_PLACE_API = cfg.GOOGLE_PLACE_API
 DB_HOST = cfg.db_host
 DB_USERNAME = cfg.db_username
 DB_PASSWORD = cfg.db_password

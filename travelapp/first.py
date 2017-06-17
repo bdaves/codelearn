@@ -123,7 +123,7 @@ def addLocation(guid):
         else:
             flash("invalid location for this trip")
 
-    return render_template('newLocation.html', form=form)
+    return render_template('newLocation.html', form=form, GOOGLE_PLACE_API=cfg.GOOGLE_PLACE_API)
 
 class UserForm(FlaskForm):
     firstname = StringField('First Name', 
