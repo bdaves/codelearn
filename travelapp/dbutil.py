@@ -3,13 +3,25 @@ import uuid
 import hashlib
 import string
 import random
+import sqlalchemy.pool as pool
+
 from . import config as cfg
 
 CHAR_SET = string.ascii_letters + string.digits
 
-def connect():
+
+def new_connection():
+    print("Created a new MySQL connection")
     return pymysql.connect(host=cfg.DB_HOST, user=cfg.DB_USERNAME, 
                            passwd=cfg.DB_PASSWORD, db=cfg.DB_DATABASE)
+
+
+conn_pool = pool.QueuePool(new_connection, max_overflow=10, pool_size=30)
+
+
+def connect():
+    return conn_pool.connect()
+
 
 def get_guid():
     return uuid.uuid1().hex
@@ -41,6 +53,7 @@ def insert_location(cursor, trip_guid, title, latitude, longitude, arrivalDate, 
     cursor.connection.commit()
 
     return location_guid
+
 
 def insert_trip(cursor, group_guid, title):
     sql = """
@@ -191,9 +204,6 @@ def get_trip(cursor, trip_guid):
         }
 
 
-
-
-
 def insert_group(cursor, name):
     sql = """
         INSERT INTO groups ( guid, name )
@@ -208,6 +218,7 @@ def insert_group(cursor, name):
     cursor.connection.commit()
 
     return guid
+
 
 def insert_group_member(cursor, group_guid, username, permission_name):
     sql = """
@@ -227,8 +238,6 @@ def insert_group_member(cursor, group_guid, username, permission_name):
     cursor.execute(sql, (group_guid, username, permission_name))
 
     cursor.connection.commit()
-
-
 
 
 def get_groups(cursor, username):

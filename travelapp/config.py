@@ -14,6 +14,13 @@ DB_USERNAME = cfg.db_username
 DB_PASSWORD = cfg.db_password
 DB_DATABASE = cfg.db_database
 
+GMAIL_USER = cfg.gmail_user
+GMAIL_PW = cfg.gmail_pwd
+
+DREAMHOST_HOST = cfg.dreamhost_host
+
+APPLICATION_EMAIL = cfg.application_email
+
 del home 
 del CONFIG_DIR
 del os 

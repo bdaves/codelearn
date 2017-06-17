@@ -1,3 +1,5 @@
-Flask==0.12
-Flask-WTF==0.13.1
-pymysql
+Flask==0.12.2
+Flask-WTF==0.14.2
+PyMySQL==0.7.11
+SQLAlchemy==1.1.10
+

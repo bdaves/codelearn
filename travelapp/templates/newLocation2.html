@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>New Location</title>
+    <style>
+       #map {
+        height: 400px;
+        width: 100%;
+       }
+    </style>
+</head>
+<body>
+    {% from "formhelpers.html" import render_field %}
+    <form action="{{ url_for('addLocation', guid=form.trip_guid.data)}}" method=post>
+        {{ form.csrf_token }}
+        <fieldset>
+            <legend>Location Form</legend>
+            <div>
+
+                {{ render_field(form.title) }}
+                {{ render_field(form.latitude) }}
+                {{ render_field(form.longitude) }}
+                {{ render_field(form.arrivalDate) }}
+                {{ render_field(form.departureDate) }}
+                {{ render_field(form.website) }}
+                {{ form.trip_guid }}
+
+
+                <input type="submit"/>
+            </div>
+
+        </fieldset>
+    </form>
+
+    <div id="map"></div>
+
+    <script>
+        var lastMarker;
+        function initMap() {
+            var middle = {lat: 0.0, lng: 0.0};
+            var map = new google.maps.Map(document.getElementById('map'), {
+                zoom: 6,
+                center: middle
+            });
+
+            google.maps.event.addListener(map, "click", function (event) {
+                var latitude = event.latLng.lat();
+                var longitude = event.latLng.lng();
+
+                var latTextEdit = document.getElementById('latitude');
+                var lngTextEdit = document.getElementById('longitude');
+
+                if (lastMarker) {
+                    lastMarker.setMap(null);
+                    google.maps.event.clearListeners(lastMarker, "click");
+                    lastMarker = null;
+                }
+
+                latTextEdit.value = latitude;
+                lngTextEdit.value = longitude;
+
+                var clickLocation = {lat: latitude, lng: longitude};
+                
+                var marker = new google.maps.Marker({
+                    position: clickLocation,
+                    map: map
+                });
+
+                lastMarker = marker;
+
+                google.maps.event.addListener(marker, "click", function (event) {
+                    marker.setMap(null);
+                    latTextEdit.value = "";
+                    lngTextEdit.value = "";
+                    google.maps.event.clearListeners(marker, "click");
+                });
+            });
+        }
+    </script>
+
+    <script async defer
+    src="https://maps.googleapis.com/maps/api/js?key={{APIKEY}}&callback=initMap">
+    </script>
+</body>
+</html>
