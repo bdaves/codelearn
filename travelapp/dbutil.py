@@ -54,6 +54,17 @@ def insert_location(cursor, trip_guid, title, latitude, longitude, arrivalDate, 
 
     return location_guid
 
+def delete_location(cursor, trip_guid, location_guid):
+    sql = """
+        DELETE locations.* FROM locations
+        JOIN trips USING (trip_id)
+        WHERE trips.guid = %s AND locations.guid = %s
+    """
+
+    cursor.execute(sql, (trip_guid, location_guid))
+
+    cursor.connection.commit()
+
 
 def insert_trip(cursor, group_guid, title):
     sql = """
@@ -66,6 +77,17 @@ def insert_trip(cursor, group_guid, title):
     cursor.connection.commit()
 
     return trip_guid
+
+def delete_trip(cursor, trip_guid):
+    sql = """
+        DELETE FROM trips
+        WHERE guid=%s
+    """
+
+    cursor.execute(sql, trip_guid)
+
+    cursor.connection.commit()
+
 
 
 def validate_user(cursor, username, password):
@@ -111,6 +133,9 @@ def get_user(cursor, username):
 
     user = cursor.fetchone()
 
+    if not user:
+        return None
+        
     return {
         "user_id": user[0],
         "guid": user[1],
@@ -195,6 +220,9 @@ def get_trip(cursor, trip_guid):
     cursor.execute(sql, utf_encode(trip_guid))
 
     trip = cursor.fetchone()
+
+    if not trip: 
+        return None
 
     return {
         "trip_id": trip[0],

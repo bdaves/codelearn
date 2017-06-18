@@ -49,7 +49,6 @@ def login(cursor):
 def index(cursor):
     username = session['username']
     trips = dbutil.get_trips(cursor, username)
-
     return render_template('trips.html', trips=trips)
 
 
@@ -59,10 +58,15 @@ def index(cursor):
 def trip(guid, cursor):
     location_data = dbutil.get_locations(cursor, guid)
     trip = dbutil.get_trip(cursor, guid)
+    
+    if not trip:
+        return redirect(url_for('index'))
+
     return render_template(
         'maps.html',
         APIKEY=cfg.GOOGLE_MAPS_API,
         location_data=json.dumps(location_data, default=jsonDefault),
+        locations=location_data,
         trip=trip)
 
 
@@ -99,6 +103,14 @@ def addLocation(guid, cursor):
             flash("invalid location for this trip")
 
     return render_template('newLocation.html', form=form, GOOGLE_PLACE_API=cfg.GOOGLE_PLACE_API)
+
+@app.route('/deleteLocation/<trip_guid>/<location_guid>', methods=['GET'])
+@logged_in
+@with_cursor
+def deleteLocation(trip_guid, location_guid, cursor):
+    dbutil.delete_location(cursor, trip_guid, location_guid)
+
+    return redirect(url_for('trip', guid=trip_guid))
 
 
 @app.route('/newLocation2/<guid>', methods=['GET', 'POST'])
@@ -207,13 +219,14 @@ def addTrip(cursor):
     return render_template('newTrip.html', form=form)
 
 
-@app.route('/deleteTrip/<guid>', methods=['GET', 'POST'])
+@app.route('/deleteTrip/<guid>', methods=['GET'])
 @logged_in
 @with_cursor
 def deleteTrip(guid, cursor):
     dbutil.delete_trip(cursor, guid)
 
     return redirect(url_for('index'))
+
 
 
 @app.route('/logout')
