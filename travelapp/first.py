@@ -52,15 +52,37 @@ def index(cursor):
     return render_template('trips.html', trips=trips)
 
 
+def sortLocations(order, locations):
+    newLocations = dict()
+
+    for idx, location_guid in enumerate(order):
+        newLocations[location_guid] = idx
+
+    result = [None] * len(order)
+
+    for location in locations:
+        if location['guid'] in newLocations:
+            result[newLocations[location['guid']]] = location
+        else:
+            result.append(location)
+
+    return [location for location in result if location]
+
+
+
+
 @app.route('/trip/<guid>')
 @logged_in
 @with_cursor
 def trip(guid, cursor):
     location_data = dbutil.get_locations(cursor, guid)
     trip = dbutil.get_trip(cursor, guid)
-    
+
     if not trip:
         return redirect(url_for('index'))
+
+    if trip['order']:
+        location_data = sortLocations(trip['order'], location_data)
 
     return render_template(
         'maps.html',
@@ -113,6 +135,16 @@ def deleteLocation(trip_guid, location_guid, cursor):
     return redirect(url_for('trip', guid=trip_guid))
 
 
+@app.route('/reorderLocations/<trip_guid>', methods=['GET', 'POST'])
+@logged_in
+@with_cursor
+def reorderLocations(trip_guid, cursor):
+    locations = request.form.getlist("locations[]")
+    dbutil.insert_order(cursor, trip_guid, locations)
+
+    return redirect(url_for('index'))
+
+
 @app.route('/newLocation2/<guid>', methods=['GET', 'POST'])
 @with_cursor
 @logged_in
@@ -154,7 +186,6 @@ class UserForm(FlaskForm):
 
 @app.route('/newUser', methods=['GET', 'POST'])
 @with_cursor
-@logged_in
 def addUser(cursor):
     form = UserForm()
     if form.validate_on_submit():

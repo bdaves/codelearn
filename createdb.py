@@ -91,10 +91,10 @@ CREATE_LOCATION_TABLE = """
 
 CREATE_TRIP_LOCATION_TABLE = """
     CREATE TABLE IF NOT EXISTS trip_locations(
-            location_id INT NOT NULL,
-            trip_order INT NOT NULL,
-            FOREIGN KEY ( location_id )
-                REFERENCES locations( location_id )
+            trip_id INT NOT NULL PRIMARY KEY,
+            location_order TEXT NOT NULL,
+            FOREIGN KEY ( trip_id )
+                REFERENCES trips( trip_id )
                 ON DELETE CASCADE );
 """
 

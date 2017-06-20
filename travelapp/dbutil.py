@@ -3,6 +3,7 @@ import uuid
 import hashlib
 import string
 import random
+import json
 import sqlalchemy.pool as pool
 
 from . import config as cfg
@@ -135,7 +136,7 @@ def get_user(cursor, username):
 
     if not user:
         return None
-        
+
     return {
         "user_id": user[0],
         "guid": user[1],
@@ -212,8 +213,9 @@ def get_trips(cursor, username):
 def get_trip(cursor, trip_guid):
 
     sql = """
-        SELECT trips.trip_id, trips.group_id, trips.guid, trips.title
-        FROM trips
+        SELECT trips.trip_id, trips.group_id, trips.guid, trips.title, trip_locations.location_order
+        FROM trips 
+        LEFT JOIN trip_locations using (trip_id)
         WHERE trips.guid = %s
     """
 
@@ -224,11 +226,17 @@ def get_trip(cursor, trip_guid):
     if not trip: 
         return None
 
+    if trip[4]:
+        order = json.loads(trip[4])
+    else:
+        order = None
+
     return {
         "trip_id": trip[0],
         "group_id": trip[1],
         "guid": trip[2],
-        "title": trip[3]
+        "title": trip[3],
+        "order": order
         }
 
 
@@ -293,3 +301,39 @@ def get_groups(cursor, username):
         group = cursor.fetchone()
 
     return groups
+
+
+def insert_order(cursor, trip_guid, location_order):
+    sql = """
+       REPLACE INTO trip_locations (trip_id, location_order) 
+       SELECT trips.trip_id, %s 
+       FROM trips WHERE trips.guid=%s;
+    """
+
+    location_order = json.dumps(location_order)
+
+    cursor.execute(sql, (location_order, trip_guid))
+
+    cursor.connection.commit()
+
+
+def get_order(cursor, trip_guid):
+    sql = """
+        SELECT location_order
+        FROM trip_locations
+        JOIN trips using (trip_id)
+        WHERE trips.guid=%s
+    """
+
+    cursor.execute(sql, trip_guid)
+
+    locations = cursor.fetchone()
+    if not locations:
+        return None
+
+    locations = json.loads(locations[0])
+
+    return locations
+
+
+

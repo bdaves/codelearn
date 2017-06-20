@@ -37,8 +37,8 @@ def with_cursor(func):
         conn = cursor = None
         try:
             conn = dbutil.connect()
-            cursor = conn.cursor()
-            return func(*args, **kwargs, cursor=cursor)
+            kwargs['cursor'] = conn.cursor()
+            return func(*args, **kwargs)
         finally:
             if cursor:
                 cursor.close()
