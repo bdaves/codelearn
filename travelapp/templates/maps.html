@@ -6,13 +6,21 @@
         height: 550px;
         width: 950px;
        }
+
+       #autocomplete {
+        width: 40%;
+        height: 2em;
+        border-width: 1px;
+        margin: 3px;
+        border-color: olive;
+       }
     </style>
     <script src="{{ url_for('static', filename='jquery-3.2.1.min.js')}}"></script>
     <script src="{{ url_for('static', filename='jquery-ui.min.js')}}"></script>
     <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='jquery-ui.min.css') }}"/>
 
     <style>
-    #locations { list-style-type: none; margin: 0; padding: 0; width: 40%; }
+    #locations { list-style-type: none; margin: 20 0 0 0; padding: 0; width: 40%; }
     #locations li { margin: 0 3px 3px 3px; padding: 0.4em; padding-left: 1.5em; font-size: 1.4em; height: 18px; }
     #locations li span { position: absolute; margin-left: -1.3em; }
     #locations li a.delete { color: red; float: right; }
@@ -53,9 +61,13 @@
         </li>
     {% endfor %}
     </ul>
+    <input id="autocomplete" placeholder="Enter an address"
+            onFocus="geolocate()" type="text"></input>
+
     <script>
 
       var location_data = {{location_data | safe}};
+      var trip_guid = "{{trip.guid}}";
       var map;
       var directionsService;
       var directionsDisplay;
@@ -183,17 +195,12 @@
 
                 location_data = reorderLocations(result, location_data)
 
-                directionsDisplay.setMap(null);
-                directionsDisplay.setMap(map);
-                computeRoute();
+                redrawRoutes();
 
 
                 // POST to server using $.post or $.ajax
-                $.post({
-                    data: {"locations": result},
-                    type: 'POST',
-                    url: '{{ url_for('reorderLocations', trip_guid=trip.guid) }}'
-                });
+                $.post('{{ url_for('reorderLocations', trip_guid=trip.guid) }}',
+                    {"locations": result});
 
                 
             }
@@ -201,10 +208,97 @@
         $( "#locations" ).disableSelection();
       });
 
+        var autocomplete;
+
+        function initAutocomplete() {
+            // Create the autocomplete object, restricting the search to geographical
+            // location types.
+            autocomplete = new google.maps.places.Autocomplete(
+                (document.getElementById('autocomplete')),
+                {types: ['geocode']});
+
+            // When the user selects an address from the dropdown, populate the address
+            // fields in the form.
+            autocomplete.addListener('place_changed', createLocation);
+        }
+
+        function createLocation() {
+        // Get the place details from the autocomplete object.
+            var place = autocomplete.getPlace();
+
+            var location = [];
+            var title = place.name;
+            var latitude = place.geometry.location.lat();
+            var longitude = place.geometry.location.lng();
+            location.push(title);
+            location.push(latitude);
+            location.push(longitude);
+
+
+
+            $.post('{{ url_for('addShortLocation', trip_guid=trip.guid) }}',
+                  {"location": location}, prepareToAdd(title, latitude, longitude),
+                  'json');
+        }
+
+        function prepareToAdd(title, latitude, longitude) {
+          function locationAdded(data, status, jqXHR) {
+            if (status === "success") {
+
+              location_data.push({
+                "title": title,
+                "guid": data['guid'],
+                "latitude": latitude,
+                "longitude": longitude
+              });
+
+              redrawRoutes();
+
+              var new_li = '<li id="' + data['guid'] + '"  class="ui-state-default">' +
+                   '<span class="ui-icon ui-icon-arrowthick-2-n-s"></span>' +
+                   title +  '<a class="delete" href="{{ url_for('deleteLocation', trip_guid=trip.guid, location_guid="") }}' +
+                   data['guid'] + '"><span class="ui-icon-red ui-icon-circle-close"></span></a></li>';
+
+              $( "#locations" ).append(new_li);
+
+              $( "#autocomplete" ).val("");
+
+            }
+          }
+
+          return locationAdded;
+        }
+
+        function geolocate() {
+            if (navigator.geolocation) {
+              navigator.geolocation.getCurrentPosition(function(position) {
+                var geolocation = {
+                  lat: position.coords.latitude,
+                  lng: position.coords.longitude
+                };
+                var circle = new google.maps.Circle({
+                  center: geolocation,
+                  radius: position.coords.accuracy
+                });
+                autocomplete.setBounds(circle.getBounds());
+              });
+            }
+        }
+        
+        function redrawRoutes() {
+          directionsDisplay.setMap(null);
+          directionsDisplay.setMap(map);
+          computeRoute();
+        }
+
+
+        function initialize() {
+          initMap();
+          initAutocomplete();
+        }
     </script>
-    <script async defer
-    src="https://maps.googleapis.com/maps/api/js?key={{APIKEY}}&callback=initMap">
-    </script>
+    <script src="https://maps.googleapis.com/maps/api/js?key={{ GOOGLE_PLACE_API }}&libraries=places&callback=initialize"
+        async defer></script>
   </body>
   <a href="/newLocation/{{ trip.guid }}">Add location!</a>
   <a href="/deleteTrip/{{ trip.guid }}">Delete Trip</a>

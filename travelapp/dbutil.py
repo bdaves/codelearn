@@ -55,6 +55,19 @@ def insert_location(cursor, trip_guid, title, latitude, longitude, arrivalDate, 
 
     return location_guid
 
+def insert_short_location(cursor, trip_guid, title, latitude, longitude):
+    sql = """
+        INSERT INTO locations (trip_id, guid, title, latitude, longitude)
+        VALUES ((SELECT trip_id FROM trips where trips.guid=%s), %s, %s, %s, %s)
+    """
+
+    location_guid = get_guid()
+
+    cursor.execute(sql, (trip_guid, location_guid, title, latitude, longitude))
+    cursor.connection.commit()
+
+    return location_guid
+
 def delete_location(cursor, trip_guid, location_guid):
     sql = """
         DELETE locations.* FROM locations

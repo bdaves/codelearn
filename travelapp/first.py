@@ -1,4 +1,4 @@
-from flask import Flask, request, render_template, url_for, redirect, session, flash
+from flask import Flask, request, render_template, url_for, redirect, session, flash, jsonify
 from flask_wtf import FlaskForm
 from wtforms import StringField, DecimalField, DateField, PasswordField, SelectField, HiddenField, validators
 from wtforms.fields.html5 import URLField, EmailField
@@ -87,6 +87,7 @@ def trip(guid, cursor):
     return render_template(
         'maps.html',
         APIKEY=cfg.GOOGLE_MAPS_API,
+        GOOGLE_PLACE_API=cfg.GOOGLE_PLACE_API,
         location_data=json.dumps(location_data, default=jsonDefault),
         locations=location_data,
         trip=trip)
@@ -135,14 +136,24 @@ def deleteLocation(trip_guid, location_guid, cursor):
     return redirect(url_for('trip', guid=trip_guid))
 
 
-@app.route('/reorderLocations/<trip_guid>', methods=['GET', 'POST'])
+@app.route('/reorderLocations/<trip_guid>', methods=['POST'])
 @logged_in
 @with_cursor
 def reorderLocations(trip_guid, cursor):
     locations = request.form.getlist("locations[]")
     dbutil.insert_order(cursor, trip_guid, locations)
 
-    return redirect(url_for('index'))
+    return "", 200
+
+@app.route('/newShortLocation/<trip_guid>', methods=['GET', 'POST'])
+@logged_in
+@with_cursor
+def addShortLocation(trip_guid, cursor):
+    location = request.form.getlist("location[]")
+
+    guid = dbutil.insert_short_location(cursor, trip_guid, location[0], location[1], location[2])
+
+    return jsonify(guid=guid), 200
 
 
 @app.route('/newLocation2/<guid>', methods=['GET', 'POST'])
