@@ -483,6 +483,21 @@ def insert_order(cursor, trip_guid, location_order):
     cursor.connection.commit()
 
 
+def change_trip_title(cursor, trip_guid, title):
+    sql = """
+        UPDATE trips
+        SET title=%s
+        WHERE guid=%s
+    """
+
+    title = utf_encode(title)
+
+    print(title)
+    cursor.execute(sql, (title, trip_guid))
+
+    cursor.connection.commit()
+
+
 def get_order(cursor, trip_guid):
     sql = """
         SELECT location_order
@@ -584,6 +599,7 @@ def get_members(cursor, guid):
         })
     return member_list
 
+
 def is_unique_email(cursor, email):
     sql = """
         SELECT email
@@ -600,6 +616,7 @@ def is_unique_email(cursor, email):
         return True
     return False
 
+
 def is_unique_username(cursor, username):
     sql = """
         SELECT username
@@ -615,7 +632,6 @@ def is_unique_username(cursor, username):
     if not user:
         return True
     return False
-
 
 
 def user_logged_in(cursor, username):

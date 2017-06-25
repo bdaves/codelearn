@@ -40,7 +40,7 @@
 
   </head>
   <body>
-    <h3 contenteditable id="triptitle">{{ trip.title }}</h3>
+    <h3 contenteditable id="triptitle" >{{ trip.title }}</h3>
     <h5><a href="{{ url_for('index') }}">Back to Trips</a>
     {% with messages = get_flashed_messages() %}
       {% if messages %}
@@ -63,8 +63,10 @@
     </ul>
     <input id="autocomplete" placeholder="Enter an address"
             onFocus="geolocate()" type="text"></input>
-
+    <a href="/newLocation/{{ trip.guid }}">Add location!</a>
+    <a href="/deleteTrip/{{ trip.guid }}">Delete Trip</a>
     <script>
+
 
       var location_data = {{location_data | safe}};
       var trip_guid = "{{trip.guid}}";
@@ -77,10 +79,6 @@
 
         var location_arr = [];
         var name_arr = [];
-        // var min_latitude = 90;
-        // var max_latitude = -90;
-        // var min_longitude = 180;
-        // var max_longitude = -180;
         var latitude, longitude, name;
         if (location_data.length > 0) {
           for (var idx = 0; idx < location_data.length; idx++) {
@@ -89,10 +87,7 @@
               name = location_data[idx]["title"];
               location_arr.push(new google.maps.LatLng(latitude, longitude));
               name_arr.push(name);
-          //     min_latitude = Math.min(min_latitude, latitude);
-          //     min_longitude = Math.min(min_longitude, longitude);
-          //     max_latitude = Math.max(max_latitude, latitude);
-          //     max_longitude = Math.max(max_longitude, longitude);
+
           }
 
         }
@@ -128,10 +123,6 @@
       function initMap() {
         
         
-
-        // var average_latitude = (min_latitude + max_latitude) / 2;
-        // var average_longitude = (min_longitude + max_longitude) / 2;
-        //var middle = {lat: average_latitude, lng: average_longitude};
         map = new google.maps.Map(document.getElementById('map'), {
           zoom: 15
         });
@@ -299,7 +290,29 @@
     </script>
     <script src="https://maps.googleapis.com/maps/api/js?key={{ GOOGLE_PLACE_API }}&libraries=places&callback=initialize"
         async defer></script>
+    <script>
+    $(document).ready(function() {
+      var trip_title = $('#triptitle').html();
+        $('#triptitle').bind('blur keydown', function(event) {
+          if (event.type === 'blur' || event.keyCode === 13) {
+            if (event.keyCode === 13) {
+                  $(this).blur();
+                  return false;
+            }
+            if (trip_title!=$(this).html()){
+                var new_title = $.trim($(this).html().replace(/&nbsp;/g, ' '));
+                if (new_title.length > 0){
+                  trip_title = new_title;
+                  $(this).html(new_title);
+                  $.post('{{url_for('changeTripTitle', guid=trip.guid)}}',
+                    {"title": new_title});
+                } else {
+                  $(this).html(trip_title);
+                }
+            }
+          }
+        });
+    });
+    </script>
   </body>
-  <a href="/newLocation/{{ trip.guid }}">Add location!</a>
-  <a href="/deleteTrip/{{ trip.guid }}">Delete Trip</a>
 </html>

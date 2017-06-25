@@ -270,7 +270,7 @@ def addUser(cursor):
                 flash("username is already in use. Please select another one", 'username')
             if not is_unique_email:
                 flash("this email already has an account linked to it", 'email')
-                
+
     return render_template('newUser.html', form=form)
 
 
@@ -425,6 +425,18 @@ def deleteTrip(guid, cursor):
     dbutil.delete_trip(cursor, guid)
 
     return redirect(url_for('index'))
+
+
+@app.route('/changeTripTitle/<guid>', methods=['POST'])
+@logged_in
+@with_cursor
+def changeTripTitle(guid, cursor):
+    title = request.form.get("title")
+
+    dbutil.change_trip_title(cursor, guid, title)
+
+    return redirect(url_for('trip', guid=guid))
+
 
 
 @app.route('/deleteGroup/<guid>', methods=['GET'])
