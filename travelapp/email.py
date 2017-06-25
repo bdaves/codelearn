@@ -11,6 +11,7 @@ else:
 
 from_user = cfg.APPLICATION_EMAIL
 
+
 def create_message(send_to, subject, message):
     return """Subject: {2}
 To: {0}
@@ -45,10 +46,3 @@ if hostname == cfg.DREAMHOST_HOST:
     send_email = __dreamhost_email
 else:
     send_email = __gmail_email
-
-
-
-
-
-
-

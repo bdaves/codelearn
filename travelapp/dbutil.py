@@ -13,7 +13,7 @@ CHAR_SET = string.ascii_letters + string.digits
 
 def new_connection():
     print("Created a new MySQL connection")
-    return pymysql.connect(host=cfg.DB_HOST, user=cfg.DB_USERNAME, 
+    return pymysql.connect(host=cfg.DB_HOST, user=cfg.DB_USERNAME,
                            passwd=cfg.DB_PASSWORD, db=cfg.DB_DATABASE)
 
 
@@ -37,23 +37,24 @@ def hash_password(salt, password):
 
 
 def utf_encode(value):
-    if (isinstance(value, str)):
+    if isinstance(value, str):
         return value.encode('utf-8')
 
     return value
 
 
-def insert_location(cursor, trip_guid, title, latitude, longitude, arrivalDate, departureDate, website):
+def insert_location(cursor, trip_guid, title, latitude, longitude, arrival_date, departure_date, website):
     sql = """
         INSERT INTO locations (trip_id, guid, title, latitude, longitude, arrivalDate, departureDate, url)
         VALUES ((SELECT trip_id FROM trips where trips.guid=%s), %s, %s, %s, %s, %s, %s, %s)
     """
 
     location_guid = get_guid()
-    cursor.execute(sql, (trip_guid, location_guid, title, latitude, longitude, arrivalDate, departureDate, website))
+    cursor.execute(sql, (trip_guid, location_guid, title, latitude, longitude, arrival_date, departure_date, website))
     cursor.connection.commit()
 
     return location_guid
+
 
 def insert_short_location(cursor, trip_guid, title, latitude, longitude):
     sql = """
@@ -68,6 +69,7 @@ def insert_short_location(cursor, trip_guid, title, latitude, longitude):
 
     return location_guid
 
+
 def delete_location(cursor, trip_guid, location_guid):
     sql = """
         DELETE locations.* FROM locations
@@ -79,8 +81,8 @@ def delete_location(cursor, trip_guid, location_guid):
 
     cursor.connection.commit()
 
-def delete_group(cursor, group_guid):
 
+def delete_group(cursor, group_guid):
     print("hello there")
 
     sql = """
@@ -91,6 +93,7 @@ def delete_group(cursor, group_guid):
     cursor.execute(sql, group_guid)
 
     cursor.connection.commit()
+
 
 def insert_trip(cursor, group_guid, title):
     sql = """
@@ -104,6 +107,7 @@ def insert_trip(cursor, group_guid, title):
 
     return trip_guid
 
+
 def delete_trip(cursor, trip_guid):
     sql = """
         DELETE FROM trips
@@ -113,7 +117,6 @@ def delete_trip(cursor, trip_guid):
     cursor.execute(sql, trip_guid)
 
     cursor.connection.commit()
-
 
 
 def validate_user(cursor, username, password, token=None):
@@ -131,7 +134,7 @@ def validate_user(cursor, username, password, token=None):
     user = get_user(cursor, username)
     if not user:
         print("No such user", username)
-        return (False, None)
+        return False, None
 
     salt = user['salt']
     expected_hash = user['hashed_password']
@@ -142,21 +145,21 @@ def validate_user(cursor, username, password, token=None):
     if not valid_pw:
         # User didn't authenticate, so don't allow any further actions
         print("Failed password check ", expected_hash, hashed_pw)
-        return (False, None)
+        return False, None
 
     user_verified = user['verified'] == 1
     if user_verified:
         print("User considered verified")
-        return (True, None)
+        return True, None
 
     valid_token = (token is not None) and (token == user['verification_token'])
     if valid_token:
         print("User validated with good token")
-        return (True, None)
+        return True, None
 
     # User still needs to verify
     print("User need to be verified")
-    return (None, user.get('guid', None))
+    return None, user.get('guid', None)
 
 
 def insert_user(cursor, username, firstname, lastname, email, password):
@@ -174,6 +177,7 @@ def insert_user(cursor, username, firstname, lastname, email, password):
     cursor.connection.commit()
 
     return guid
+
 
 def make_user_dict(columns):
     return {
@@ -194,16 +198,18 @@ def make_user_dict(columns):
         "last_password_change": columns[14]
     }
 
+
 def get_user(cursor, username):
     sql = """
-        SELECT user_id, guid, username, firstname, lastname, email, verified, registered, hashed_password, salt,
-               verification_token, verified_date, password_reset_open, password_change_count, last_password_change
+        SELECT user_id, guid, username, firstname, lastname, email, verified, registered,
+               hashed_password, salt, verification_token, verified_date, password_reset_open,
+               password_change_count, last_password_change
         FROM users
-        where username=%s
+        WHERE username=%s
     """
 
     count = cursor.execute(sql, username)
-    if (count != 1):
+    if count != 1:
         return None
 
     user = cursor.fetchone()
@@ -213,16 +219,18 @@ def get_user(cursor, username):
 
     return make_user_dict(user)
 
+
 def get_user_by_guid(cursor, user_guid):
     sql = """
-        SELECT user_id, guid, username, firstname, lastname, email, verified, registered, hashed_password, salt,
-               verification_token, verified_date, password_reset_open, password_change_count, last_password_change
+        SELECT user_id, guid, username, firstname, lastname, email, verified, registered,
+               hashed_password, salt, verification_token, verified_date, password_reset_open,
+               password_change_count, last_password_change
         FROM users
-        where guid=%s
+        WHERE guid=%s
     """
 
     count = cursor.execute(sql, user_guid)
-    if (count != 1):
+    if count != 1:
         return None
 
     user = cursor.fetchone()
@@ -236,9 +244,9 @@ def get_user_by_guid(cursor, user_guid):
 def get_locations(cursor, trip_guid):
     sql = """
         SELECT locations.location_id, locations.trip_id, locations.guid, locations.title,
-               locations.latitude, locations.longitude, locations.arrivalDate, 
+               locations.latitude, locations.longitude, locations.arrivalDate,
                locations.departureDate, locations.url
-        FROM locations 
+        FROM locations
         JOIN trips USING (trip_id)
         where trips.guid = %s
     """
@@ -247,7 +255,8 @@ def get_locations(cursor, trip_guid):
 
     location_list = []
     location = cursor.fetchone()
-    while (location != None):
+
+    while location is not None:
         location_list.append({
             "location_id": location[0],
             "trip_id": location[1],
@@ -262,7 +271,6 @@ def get_locations(cursor, trip_guid):
         location = cursor.fetchone()
 
     return location_list
-
 
 
 def get_trips(cursor, username):
@@ -281,8 +289,8 @@ def get_trips(cursor, username):
     trips = []
 
     trip = cursor.fetchone()
-    while (trip != None):
-        trips.append( {
+    while trip is not None:
+        trips.append({
             "trip_id": trip[0],
             "group_id": trip[1],
             "guid": trip[2],
@@ -292,11 +300,11 @@ def get_trips(cursor, username):
 
     return trips
 
-def get_trip(cursor, trip_guid):
 
+def get_trip(cursor, trip_guid):
     sql = """
         SELECT trips.trip_id, trips.group_id, trips.guid, trips.title, trip_locations.location_order
-        FROM trips 
+        FROM trips
         LEFT JOIN trip_locations using (trip_id)
         WHERE trips.guid = %s
     """
@@ -305,7 +313,7 @@ def get_trip(cursor, trip_guid):
 
     trip = cursor.fetchone()
 
-    if not trip: 
+    if not trip:
         return None
 
     if trip[4]:
@@ -319,7 +327,7 @@ def get_trip(cursor, trip_guid):
         "guid": trip[2],
         "title": trip[3],
         "order": order
-        }
+    }
 
 
 def insert_group(cursor, name):
@@ -337,18 +345,19 @@ def insert_group(cursor, name):
 
     return guid
 
+
 def is_valid_username(cursor, username):
     sql = """
         SELECT username
-        from users 
+        from users
         WHERE username=%s
     """
     username = utf_encode(username)
 
-    cursor.execute(sql , username)
+    cursor.execute(sql, username)
 
     user = cursor.fetchone()
-    if not user: 
+    if not user:
         return False
     return True
 
@@ -356,7 +365,7 @@ def is_valid_username(cursor, username):
 def is_valid_email(cursor, email):
     sql = """
         SELECT email
-        from users 
+        from users
         WHERE email=%s
     """
     email = utf_encode(email)
@@ -364,10 +373,9 @@ def is_valid_email(cursor, email):
     cursor.execute(sql, email)
 
     user = cursor.fetchone()
-    if not user: 
+    if not user:
         return False
     return True
-
 
 
 def insert_member_by_email(cursor, group_guid, email, permission_id):
@@ -386,6 +394,7 @@ def insert_member_by_email(cursor, group_guid, email, permission_id):
     cursor.execute(sql, (permission_id, group_guid, email))
 
     cursor.connection.commit()
+
 
 def insert_member_by_username(cursor, group_guid, username, permission_id):
     sql = """
@@ -413,25 +422,24 @@ def insert_group_member(cursor, group_guid, username, permission_name):
         WHERE groups.guid = %s
             AND users.username = %s
             AND permissions.name = %s;
-    """ 
+    """
 
     group_guid = utf_encode(group_guid)
     username = utf_encode(username)
     permission_name = utf_encode(permission_name)
-    
 
     cursor.execute(sql, (group_guid, username, permission_name))
 
     cursor.connection.commit()
 
-def addToGroup(cursor, group_guid, emails, usernames ,permission_id):
+
+def add_to_group(cursor, group_guid, emails, usernames, permission_id):
     for email in emails:
         if is_valid_email(cursor, email):
             insert_member_by_email(cursor, group_guid, email, permission_id)
     for username in usernames:
         if is_valid_username(cursor, username):
             insert_member_by_username(cursor, group_guid, username, permission_id)
-
 
 
 def get_groups(cursor, username):
@@ -450,7 +458,7 @@ def get_groups(cursor, username):
     groups = []
 
     group = cursor.fetchone()
-    while (group != None):
+    while group is not None:
         groups.append({
             "group_id": group[0],
             "guid": group[1],
@@ -463,9 +471,9 @@ def get_groups(cursor, username):
 
 def insert_order(cursor, trip_guid, location_order):
     sql = """
-       REPLACE INTO trip_locations (trip_id, location_order) 
-       SELECT trips.trip_id, %s 
-       FROM trips WHERE trips.guid=%s;
+       REPLACE INTO trip_locations (trip_id, location_order)
+       SELECT trips.trip_id, %s
+       FROM trips WHERE trips.guid=%s
     """
 
     location_order = json.dumps(location_order)
@@ -500,13 +508,12 @@ def get_permissions(cursor):
         FROM permissions
     """
 
-
     cursor.execute(sql)
 
     permissions = []
 
     permission = cursor.fetchone()
-    while (permission != None):
+    while permission is not None:
         permissions.append({
             "permission_id": permission[0],
             "name": permission[1]
@@ -515,11 +522,12 @@ def get_permissions(cursor):
 
     return permissions
 
+
 def has_permissions(cursor, username, group_guid, permissions):
     sql = """
         SELECT permissions.name
         FROM users
-        JOIN groups 
+        JOIN groups
         JOIN group_members using (group_id, user_id)
         JOIN permissions using (permission_id)
         WHERE users.username = %s
@@ -542,7 +550,6 @@ def get_permissions_list(cursor, column_name):
         FROM permissions
         WHERE {0} = 1
     """.format(column_name)
-
 
     cursor.execute(sql)
 
@@ -572,14 +579,14 @@ def get_members(cursor, guid):
     member_list = []
     for member in members:
         member_list.append({
-                "name": member[0],
-                "permission": member[1]
-            })
+            "name": member[0],
+            "permission": member[1]
+        })
     return member_list
 
 
 def user_logged_in(cursor, username):
-    "Update statistics about user logging in"
+    """Update statistics about user logging in"""
 
     sql = """
     UPDATE users SET last_login=NOW(), login_count=login_count + 1
@@ -592,10 +599,11 @@ def user_logged_in(cursor, username):
 
 
 def user_is_verified(cursor, username):
-    "Mark that a user has been verified"
+    """Mark that a user has been verified"""
 
     sql = """
-    UPDATE users SET verified=1, verification_token=NULL, verified_date=NOW(), last_login=NOW(), login_count=login_count+1
+    UPDATE users SET verified=1, verification_token=NULL, verified_date=NOW(),
+                     last_login=NOW(), login_count=login_count+1
     WHERE users.username = %s
     """
 
@@ -607,7 +615,7 @@ def user_is_verified(cursor, username):
 
 
 def set_verification_token(cursor, user_guid, token):
-    "Record a new verification token for the user"
+    """Record a new verification token for the user"""
 
     sql = """
     UPDATE users SET verification_token=%s

@@ -37,7 +37,7 @@ CREATE_PERMISSION_TABLE = """
 CREATE_GROUP_TABLE = """
     CREATE TABLE IF NOT EXISTS groups(
             group_id INT NOT NULL AUTO_INCREMENT,
-            guid CHAR(32) NOT NULL, 
+            guid CHAR(32) NOT NULL,
             name VARCHAR(128) NOT NULL,
             PRIMARY KEY ( group_id ));
 
@@ -76,22 +76,21 @@ CREATE_TRIP_TABLE = """
 """
 
 CREATE_LOCATION_TABLE = """
-    CREATE TABLE IF NOT EXISTS locations( 
+    CREATE TABLE IF NOT EXISTS locations(
             location_id INT NOT NULL AUTO_INCREMENT,
             trip_id INT NOT NULL,
             guid CHAR(32) NOT NULL,
-            title VARCHAR(128) NOT NULL, 
+            title VARCHAR(128) NOT NULL,
             latitude FLOAT NOT NULL,
             longitude FLOAT NOT NULL,
             arrivalDate DATE,
             departureDate DATE,
-            url VARCHAR(256), 
+            url VARCHAR(256),
             PRIMARY KEY ( location_id ),
             FOREIGN KEY ( trip_id )
                 REFERENCES trips( trip_id )
                 ON DELETE CASCADE );
 """
-
 
 
 CREATE_TRIP_LOCATION_TABLE = """
@@ -103,6 +102,7 @@ CREATE_TRIP_LOCATION_TABLE = """
                 ON DELETE CASCADE );
 """
 
+
 def insert_permission(cursor, name, read, write, delete, modify):
     sql = """
         INSERT INTO permissions (name, can_read, can_write, can_delete, can_modify_group)
@@ -112,8 +112,6 @@ def insert_permission(cursor, name, read, write, delete, modify):
     cursor.execute(sql, (name, read, write, delete, modify))
 
     cursor.connection.commit()
-
-
 
 
 cfg.printconfig()
