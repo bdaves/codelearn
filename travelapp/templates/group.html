@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Group Members</title>
+
+    <script src="{{ url_for('static', filename='jquery-3.2.1.min.js')}}"></script>
+    <script src="{{ url_for('static', filename='jquery-ui.min.js')}}"></script>
+
+<body>
+    <ul>
+    {% for member in members %}
+        <li>
+            {{ member.name }} {{ member.permission }}
+        </li>
+    {% endfor %}
+    </ul>
+    <a href="{{url_for('addToGroup2', guid=guid)}}">Add to your group!</a>
+    <button onclick="confirmDelete()">Delete Group</button>
+    <a href="/groups">Back to Groups</a>
+</body>
+<script>
+function confirmDelete() {
+    if (confirm("Are you sure you want to delete this group?\nDeleting it will also delete any trips associated with it as well.") == true) {
+        window.location.href = '{{url_for('deleteGroup', guid=guid)}}';
+    }
+}
+</script>
+</html>

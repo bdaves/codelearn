@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>add people to your group</title>
+</head>
+<body>
+    {% from "formhelpers.html" import render_field %}
+    <form action="/addToGroup" method=post>
+        {{ form.csrf_token }}
+        <fieldset>
+            <legend>Group Member Form</legend>
+            <div>
+
+                {{ render_field(form.group) }}
+                {{ render_field(form.names) }}
+                {{ render_field(form.permission) }}
+                
+                <input type="submit"/>
+                {% for message in get_flashed_messages() %}
+                    <div class="error">{{ message }}</div>
+                {% endfor %}
+            </div>
+
+        </fieldset>
+    </form>
+</body>
+</html>

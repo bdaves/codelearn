@@ -15,6 +15,11 @@ USERNAME = "bdaves"
 app = Flask(__name__)
 app.secret_key = "Development Key"
 
+def has_permissions(cursor, group_guid, permissions):
+    username = session['username']
+    return dbutil.has_permissions(cursor, username, group_guid, permissions)
+
+
 def jsonDefault(obj):
     if isinstance(obj, (datetime, date)):
         serial = obj.isoformat()
@@ -50,6 +55,27 @@ def index(cursor):
     username = session['username']
     trips = dbutil.get_trips(cursor, username)
     return render_template('trips.html', trips=trips)
+
+
+
+@app.route('/groups')
+@logged_in
+@with_cursor
+def groups(cursor):
+    username = session['username']
+    groups = dbutil.get_groups(cursor, username)
+    return render_template('groups.html', groups=groups)
+
+
+@app.route('/group/<guid>')
+@logged_in
+@with_cursor
+def group(guid, cursor):
+    members = dbutil.get_members(cursor, guid)
+    return render_template('group.html', members=members, guid=guid)
+
+
+
 
 
 def sortLocations(order, locations):
@@ -91,6 +117,7 @@ def trip(guid, cursor):
         location_data=json.dumps(location_data, default=jsonDefault),
         locations=location_data,
         trip=trip)
+
 
 
 class LocationForm(FlaskForm):
@@ -215,6 +242,26 @@ class GroupForm(FlaskForm):
     name = StringField('Group Name', 
         [validators.InputRequired('  *Please create a group name'), validators.Length(max=128)])
 
+class AddToGroupForm(FlaskForm):
+
+    group = SelectField('Group', coerce=str)
+    names = StringField('usernames / email addresses', 
+        [validators.InputRequired('  *Please create a group name'), validators.Length(max=128)])
+    permission = SelectField('Permission Level', coerce=int)
+
+    def set_groups(self, groups):
+        self.group.choices = groups
+
+    def set_permissions(self, permissions):
+        self.permission.choices = permissions
+
+class AddToGroupForm2(FlaskForm):
+    names = StringField('usernames / email addresses', 
+        [validators.InputRequired('  *Please create a group name'), validators.Length(max=128)])
+    permission = SelectField('Permission Level', coerce=int)
+
+    def set_permissions(self, permissions):
+        self.permission.choices = permissions
 
 @app.route('/newGroup', methods=['GET', 'POST'])
 @logged_in
@@ -228,10 +275,82 @@ def addGroup(cursor):
 
         dbutil.insert_group_member(cursor, guid, username, "OWNER")
 
-        return redirect(url_for('index'))
+        return redirect(url_for('groups'))
 
     return render_template('newGroup.html', form=form)
 
+
+def display_groups(form, cursor):
+    username = session['username']
+    groups = dbutil.get_groups(cursor, username)
+    choices = [(group['guid'], group['name']) for group in groups]
+    form.set_groups(choices)
+
+def display_permissions(form, cursor):
+    username = session['username']
+    permissions = dbutil.get_permissions(cursor)
+    choices = [(permission['permission_id'], permission['name']) for permission in permissions]
+    form.set_permissions(choices)
+
+def parseNames(names):
+    emails = []
+    usernames = []
+    namelist = [name.strip() for name in names.split(',')]
+    for name in namelist:
+        if "@" in name:
+            emails.append(name)
+        else:
+            usernames.append(name)
+
+    return {"emails": emails, "usernames": usernames}
+
+@app.route('/addToGroup', methods=['GET', 'POST'])
+@logged_in
+@with_cursor
+def addToGroup(cursor):
+    form = AddToGroupForm()
+    display_groups(form, cursor)
+    display_permissions(form, cursor)
+    if form.validate_on_submit():
+        group = form.group.data
+        names = form.names.data
+        permissions = dbutil.get_permissions_list(cursor, "can_modify_group")
+        if has_permissions(cursor, group, permissions):
+            permission = form.permission.data
+            names = parseNames(names)
+            print(names["emails"])
+            print(names["usernames"])
+            print(permission)
+            print(group)
+            dbutil.addToGroup(cursor, group, names["emails"], names["usernames"],permission)
+
+            return redirect(url_for('index'))
+
+        else:
+            flash("you must be an owner or admin to add people to a group")
+
+    return render_template('addToGroup.html', form=form)
+
+@app.route('/addToGroup2/<guid>', methods=['GET', 'POST'])
+@logged_in
+@with_cursor
+def addToGroup2(guid, cursor):
+    form = AddToGroupForm2()
+    display_permissions(form, cursor)
+    if form.validate_on_submit():
+        names = form.names.data
+        permissions = dbutil.get_permissions_list(cursor, "can_modify_group")
+        if has_permissions(cursor, guid, permissions):
+            permission = form.permission.data
+            names = parseNames(names)
+            dbutil.addToGroup(cursor, guid, names["emails"], names["usernames"],permission)
+
+            return redirect(url_for('group', guid=guid))
+
+        else:
+            flash("you must be an owner or admin to add people to a group")
+
+    return render_template('addToGroup2.html', form=form, guid=guid)
 
 class TripForm(FlaskForm):
     title = StringField('Trip Title', 
@@ -247,11 +366,7 @@ class TripForm(FlaskForm):
 @with_cursor
 def addTrip(cursor):
     form = TripForm(request.form)
-    username = session['username']
-    groups = dbutil.get_groups(cursor, username)
-    choices = [(group['guid'], group['name']) for group in groups]
-    form.set_groups(choices)
-
+    display_groups(form, cursor)
     if form.validate_on_submit():
         title = form.title.data
         group = form.group.data
@@ -268,6 +383,14 @@ def deleteTrip(guid, cursor):
     dbutil.delete_trip(cursor, guid)
 
     return redirect(url_for('index'))
+
+@app.route('/deleteGroup/<guid>', methods=['GET'])
+@logged_in
+@with_cursor
+def deleteGroup(guid, cursor):
+    dbutil.delete_group(cursor, guid)
+
+    return redirect(url_for('groups'))
 
 
 

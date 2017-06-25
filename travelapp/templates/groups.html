@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Groups</title>
+</head>
+<body>
+    <ul>
+    {% for group in groups %}
+        <li>
+            <a href="{{ url_for('group', guid=group.guid) }}">{{ group.name }}</a>
+        </li>
+    {% endfor %}
+    </ul>
+    <a href="/newGroup">Create new Group!</a>
+</body>
+</html>

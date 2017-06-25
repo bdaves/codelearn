@@ -79,6 +79,18 @@ def delete_location(cursor, trip_guid, location_guid):
 
     cursor.connection.commit()
 
+def delete_group(cursor, group_guid):
+
+    print("hello there")
+
+    sql = """
+        DELETE FROM groups
+        WHERE guid=%s
+    """
+
+    cursor.execute(sql, group_guid)
+
+    cursor.connection.commit()
 
 def insert_trip(cursor, group_guid, title):
     sql = """
@@ -268,6 +280,73 @@ def insert_group(cursor, name):
 
     return guid
 
+def is_valid_username(cursor, username):
+    sql = """
+        SELECT username
+        from users 
+        WHERE username=%s
+    """
+    username = utf_encode(username)
+
+    cursor.execute(sql , username)
+
+    user = cursor.fetchone()
+    if not user: 
+        return False
+    return True
+
+
+def is_valid_email(cursor, email):
+    sql = """
+        SELECT email
+        from users 
+        WHERE email=%s
+    """
+    email = utf_encode(email)
+
+    cursor.execute(sql, email)
+
+    user = cursor.fetchone()
+    if not user: 
+        return False
+    return True
+
+
+
+def insert_member_by_email(cursor, group_guid, email, permission_id):
+    sql = """
+        REPLACE INTO group_members(group_id, user_id, permission_id)
+        SELECT groups.group_id, users.user_id, %s
+        FROM groups JOIN users
+        WHERE groups.guid = %s
+            AND users.email = %s
+    """
+
+    group_guid = utf_encode(group_guid)
+    email = utf_encode(email)
+    permission_id = utf_encode(permission_id)
+
+    cursor.execute(sql, (permission_id, group_guid, email))
+
+    cursor.connection.commit()
+
+def insert_member_by_username(cursor, group_guid, username, permission_id):
+    sql = """
+        REPLACE INTO group_members(group_id, user_id, permission_id)
+        SELECT groups.group_id, users.user_id, %s
+        FROM groups JOIN users
+        WHERE groups.guid = %s
+            AND users.username = %s
+    """
+
+    group_guid = utf_encode(group_guid)
+    username = utf_encode(username)
+    permission_id = utf_encode(permission_id)
+
+    cursor.execute(sql, (permission_id, group_guid, username))
+
+    cursor.connection.commit()
+
 
 def insert_group_member(cursor, group_guid, username, permission_name):
     sql = """
@@ -287,6 +366,15 @@ def insert_group_member(cursor, group_guid, username, permission_name):
     cursor.execute(sql, (group_guid, username, permission_name))
 
     cursor.connection.commit()
+
+def addToGroup(cursor, group_guid, emails, usernames ,permission_id):
+    for email in emails:
+        if is_valid_email(cursor, email):
+            insert_member_by_email(cursor, group_guid, email, permission_id)
+    for username in usernames:
+        if is_valid_username(cursor, username):
+            insert_member_by_username(cursor, group_guid, username, permission_id)
+
 
 
 def get_groups(cursor, username):
@@ -347,6 +435,90 @@ def get_order(cursor, trip_guid):
     locations = json.loads(locations[0])
 
     return locations
+
+
+def get_permissions(cursor):
+    sql = """
+        SELECT permission_id, name
+        FROM permissions
+    """
+
+
+    cursor.execute(sql)
+
+    permissions = []
+
+    permission = cursor.fetchone()
+    while (permission != None):
+        permissions.append({
+            "permission_id": permission[0],
+            "name": permission[1]
+        })
+        permission = cursor.fetchone()
+
+    return permissions
+
+def has_permissions(cursor, username, group_guid, permissions):
+    sql = """
+        SELECT permissions.name
+        FROM users
+        JOIN groups 
+        JOIN group_members using (group_id, user_id)
+        JOIN permissions using (permission_id)
+        WHERE users.username = %s
+            AND groups.guid = %s
+    """
+
+    username = utf_encode(username)
+    group_guid = utf_encode(group_guid)
+
+    cursor.execute(sql, (username, group_guid))
+
+    permission = cursor.fetchone()[0]
+
+    return permission in permissions
+
+def get_permissions_list(cursor, column_name):
+    sql = """
+        SELECT name
+        FROM permissions
+        WHERE {0} = 1
+    """.format(column_name)
+
+
+    cursor.execute(sql)
+
+    permission_list = cursor.fetchall()
+
+    permission_names = []
+    for permission in permission_list:
+        permission_names.append(permission[0])
+
+    return permission_names
+
+
+def get_members(cursor, guid):
+    sql = """
+        SELECT users.username, permissions.name
+        FROM groups
+        JOIN group_members USING (group_id)
+        JOIN permissions USING (permission_id)
+        JOIN users USING (user_id)
+        WHERE groups.guid = %s
+    """
+
+    cursor.execute(sql, guid)
+
+    members = cursor.fetchall()
+
+    member_list = []
+    for member in members:
+        member_list.append({
+                "name": member[0],
+                "permission": member[1]
+            })
+    return member_list
+
 
 
 
