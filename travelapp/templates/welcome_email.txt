@@ -4,7 +4,7 @@ Before you will be able to participate, we need to verify your email.
 
 Use the link below to verify your email address.
 
-{{url_for('verification', token=token)}}
+{{url_for('verification', token=token, _external=True, _scheme="http")}}
 
 Thank you,
 
