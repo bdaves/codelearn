@@ -1,7 +1,8 @@
 
 from flask import render_template
 import uuid
-from . import config as cfg
+import dns.resolver
+
 from . import dbutil
 from . import email
 
@@ -26,3 +27,21 @@ def send_user_validation_email(cursor, user_guid):
 
     print("Email sent")
     email.send_email(email_address, "Welcome", email_message)
+
+
+def is_valid_email_server(user_email):
+    if not user_email:
+        return False
+
+    email_parts = user_email.split('@')
+
+    if len(email_parts) != 2:
+        return False
+
+    email_server = email_parts[1]
+
+    try:
+        results = list(dns.resolver.query(email_server, 'MX'))
+        return len(results) > 0
+    except dns.resolver.NXDOMAIN:
+        return False
