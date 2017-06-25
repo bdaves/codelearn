@@ -584,6 +584,39 @@ def get_members(cursor, guid):
         })
     return member_list
 
+def is_unique_email(cursor, email):
+    sql = """
+        SELECT email
+        FROM users
+        WHERE email=%s
+    """
+    email = utf_encode(email)
+
+    cursor.execute(sql, email)
+
+    user = cursor.fetchone()
+
+    if not user:
+        return True
+    return False
+
+def is_unique_username(cursor, username):
+    sql = """
+        SELECT username
+        FROM users
+        WHERE username=%s
+    """
+    username = utf_encode(username)
+
+    cursor.execute(sql, username)
+
+    user = cursor.fetchone()
+
+    if not user:
+        return True
+    return False
+
+
 
 def user_logged_in(cursor, username):
     """Update statistics about user logging in"""

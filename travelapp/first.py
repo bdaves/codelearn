@@ -258,9 +258,19 @@ def addUser(cursor):
         password = form.password.data
         email = form.email.data
 
-        dbutil.insert_user(cursor, username, firstname, lastname, email, password)
+        is_unique_username = dbutil.is_unique_username(cursor, username)
+        is_unique_email = dbutil.is_unique_email(cursor, email)
 
-        return redirect(url_for('index'))
+        if is_unique_username and is_unique_email:
+            dbutil.insert_user(cursor, username, firstname, lastname, email, password)
+
+            return redirect(url_for('index'))
+        else:
+            if not is_unique_username:
+                flash("username is already in use. Please select another one", 'username')
+            if not is_unique_email:
+                flash("this email already has an account linked to it", 'email')
+                
     return render_template('newUser.html', form=form)
 
 

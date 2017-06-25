@@ -14,9 +14,16 @@
                 {{ render_field(form.firstname) }}
                 {{ render_field(form.lastname) }}
                 {{ render_field(form.username) }}
+                {% for message in get_flashed_messages(category_filter=["username"]) %}
+                    <div class="error">{{ message }}</div>
+                {% endfor %}
                 {{ render_field(form.password) }}
                 {{ render_field(form.confirmpwd) }}
                 {{ render_field(form.email) }}
+                
+                {% for message in get_flashed_messages(category_filter=["email"]) %}
+                    <div class="error">{{ message }}</div>
+                {% endfor %}
                 {{ render_field(form.confirmemail) }}
 
                 <input type="submit"/>

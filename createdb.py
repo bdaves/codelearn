@@ -5,10 +5,10 @@ CREATE_USERS_TABLE = """
     CREATE TABLE IF NOT EXISTS users(
         user_id INT NOT NULL AUTO_INCREMENT,
         guid CHAR(32) NOT NULL,
-        username VARCHAR(64) NOT NULL,
+        username VARCHAR(64) NOT NULL UNIQUE,
         firstname VARCHAR(64) NOT NULL,
         lastname VARCHAR(64) NOT NULL,
-        email VARCHAR(128) NOT NULL,
+        email VARCHAR(128) NOT NULL UNIQUE,
         verified BOOLEAN DEFAULT 0,
         verification_token CHAR(32) DEFAULT NULL,
         verified_date TIMESTAMP DEFAULT NULL,
