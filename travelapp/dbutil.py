@@ -83,8 +83,6 @@ def delete_location(cursor, trip_guid, location_guid):
 
 
 def delete_group(cursor, group_guid):
-    print("hello there")
-
     sql = """
         DELETE FROM groups
         WHERE guid=%s
@@ -133,7 +131,6 @@ def validate_user(cursor, username, password, token=None):
     """
     user = get_user(cursor, username)
     if not user:
-        print("No such user", username)
         return False, None
 
     salt = user['salt']
@@ -144,21 +141,17 @@ def validate_user(cursor, username, password, token=None):
     valid_pw = expected_hash == hashed_pw
     if not valid_pw:
         # User didn't authenticate, so don't allow any further actions
-        print("Failed password check ", expected_hash, hashed_pw)
         return False, None
 
     user_verified = user['verified'] == 1
     if user_verified:
-        print("User considered verified")
         return True, None
 
     valid_token = (token is not None) and (token == user['verification_token'])
     if valid_token:
-        print("User validated with good token")
         return True, None
 
     # User still needs to verify
-    print("User need to be verified")
     return None, user.get('guid', None)
 
 
@@ -658,7 +651,6 @@ def user_is_verified(cursor, username):
 
     username = utf_encode(username)
 
-    print(sql)
     cursor.execute(sql, username)
     cursor.connection.commit()
 

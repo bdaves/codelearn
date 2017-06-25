@@ -12,6 +12,7 @@ from .decorators import logged_in, with_cursor
 
 app = Flask(__name__)
 app.secret_key = "Development Key"
+app.config["SERVER_NAME"] = cfg.SERVER_NAME
 
 
 def has_permissions(cursor, group_guid, permissions):
@@ -45,13 +46,12 @@ def login(cursor):
         username = request.form['username']
         password = request.form['password']
         (validation_state, user_guid) = dbutil.validate_user(cursor, username, password)
-        print("after check", validation_state, user_guid)
+
         if validation_state is None:
             flash(Markup("""Before attempting to login, please look at your email for an account validation request.
 
             If you do not have the validation email, <a href="{0}">click here</a> to request a new validation email.""".
                          format(url_for("request_validation", user_guid=user_guid))), "message")
-            print("Doing nothing")
         elif validation_state:
             # Validated and username/password match
             session['username'] = username
@@ -358,10 +358,6 @@ def addToGroup(cursor):
         if has_permissions(cursor, user_group, permissions):
             permission = form.permission.data
             names = parseNames(names)
-            print(names["emails"])
-            print(names["usernames"])
-            print(permission)
-            print(user_group)
             dbutil.add_to_group(cursor, user_group, names["emails"], names["usernames"], permission)
 
             return redirect(url_for('index'))

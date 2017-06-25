@@ -20,6 +20,7 @@ GMAIL_PW = cfg.gmail_pwd
 
 DREAMHOST_HOST = cfg.dreamhost_host
 
+SERVER_NAME = cfg.server_name
 APPLICATION_EMAIL = cfg.application_email
 
 del home
