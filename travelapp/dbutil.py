@@ -116,17 +116,47 @@ def delete_trip(cursor, trip_guid):
 
 
 
-def validate_user(cursor, username, password):
+def validate_user(cursor, username, password, token=None):
+    """
+    Overloaded function which helps to validate new users, makes sure they have already
+    been validated, or they are validating and have a valid validation token
+
+    :param cursor: Database cursor
+    :param username: Username requested validation
+    :param password: Password supplied by user
+    :param token: Only required if verifying new user
+    :return: None - not yet validated, and no validation token provided,
+            True if username and password match
+    """
     user = get_user(cursor, username)
     if not user:
-        return False
+        print("No such user", username)
+        return (False, None)
 
     salt = user['salt']
     expected_hash = user['hashed_password']
 
     hashed_pw = hash_password(salt, password)
 
-    return expected_hash == hashed_pw
+    valid_pw = expected_hash == hashed_pw
+    if not valid_pw:
+        # User didn't authenticate, so don't allow any further actions
+        print("Failed password check ", expected_hash, hashed_pw)
+        return (False, None)
+
+    user_verified = user['verified'] == 1
+    if user_verified:
+        print("User considered verified")
+        return (True, None)
+
+    valid_token = (token is not None) and (token == user['verification_token'])
+    if valid_token:
+        print("User validated with good token")
+        return (True, None)
+
+    # User still needs to verify
+    print("User need to be verified")
+    return (None, user.get('guid', None))
 
 
 def insert_user(cursor, username, firstname, lastname, email, password):
@@ -145,10 +175,29 @@ def insert_user(cursor, username, firstname, lastname, email, password):
 
     return guid
 
+def make_user_dict(columns):
+    return {
+        "user_id": columns[0],
+        "guid": columns[1],
+        "username": columns[2],
+        "firstname": columns[3],
+        "lastname": columns[4],
+        "email": columns[5],
+        "verified": columns[6],
+        "registered": columns[7],
+        "hashed_password": columns[8],
+        "salt": columns[9],
+        "verification_token": columns[10],
+        "verified_date": columns[11],
+        "password_reset_open": columns[12],
+        "password_change_count": columns[13],
+        "last_password_change": columns[14]
+    }
 
 def get_user(cursor, username):
     sql = """
-        SELECT user_id, guid, username, firstname, lastname, email, verified, registered, hashed_password, salt
+        SELECT user_id, guid, username, firstname, lastname, email, verified, registered, hashed_password, salt,
+               verification_token, verified_date, password_reset_open, password_change_count, last_password_change
         FROM users
         where username=%s
     """
@@ -162,18 +211,26 @@ def get_user(cursor, username):
     if not user:
         return None
 
-    return {
-        "user_id": user[0],
-        "guid": user[1],
-        "username": user[2],
-        "firstname": user[3],
-        "lastname": user[4],
-        "email": user[5],
-        "verified": user[6],
-        "registered": user[7],
-        "hashed_password": user[8],
-        "salt": user[9]
-    }
+    return make_user_dict(user)
+
+def get_user_by_guid(cursor, user_guid):
+    sql = """
+        SELECT user_id, guid, username, firstname, lastname, email, verified, registered, hashed_password, salt,
+               verification_token, verified_date, password_reset_open, password_change_count, last_password_change
+        FROM users
+        where guid=%s
+    """
+
+    count = cursor.execute(sql, user_guid)
+    if (count != 1):
+        return None
+
+    user = cursor.fetchone()
+
+    if not user:
+        return None
+
+    return make_user_dict(user)
 
 
 def get_locations(cursor, trip_guid):
@@ -478,6 +535,7 @@ def has_permissions(cursor, username, group_guid, permissions):
 
     return permission in permissions
 
+
 def get_permissions_list(cursor, column_name):
     sql = """
         SELECT name
@@ -520,5 +578,41 @@ def get_members(cursor, guid):
     return member_list
 
 
+def user_logged_in(cursor, username):
+    "Update statistics about user logging in"
+
+    sql = """
+    UPDATE users SET last_login=NOW(), login_count=login_count + 1
+    WHERE users.username = %s
+    """
+
+    username = utf_encode(username)
+    cursor.execute(sql, username)
+    cursor.connection.commit()
 
 
+def user_is_verified(cursor, username):
+    "Mark that a user has been verified"
+
+    sql = """
+    UPDATE users SET verified=1, verification_token=NULL, verified_date=NOW(), last_login=NOW(), login_count=login_count+1
+    WHERE users.username = %s
+    """
+
+    username = utf_encode(username)
+
+    print(sql)
+    cursor.execute(sql, username)
+    cursor.connection.commit()
+
+
+def set_verification_token(cursor, user_guid, token):
+    "Record a new verification token for the user"
+
+    sql = """
+    UPDATE users SET verification_token=%s
+    WHERE users.guid=%s
+    """
+
+    cursor.execute(sql, (token, user_guid))
+    cursor.connection.commit()

@@ -1,9 +1,10 @@
-from flask import Flask, request, render_template, url_for, redirect, session, flash, jsonify
+from flask import Flask, request, render_template, url_for, redirect, session, flash, jsonify, Markup
 from flask_wtf import FlaskForm
 from wtforms import StringField, DecimalField, DateField, PasswordField, SelectField, HiddenField, validators
 from wtforms.fields.html5 import URLField, EmailField
 from . import config as cfg
-from . import dbutil 
+from . import dbutil
+from . import helpers
 import json
 from datetime import datetime, date
 
@@ -36,17 +37,39 @@ class LoginForm(FlaskForm):
 @app.route('/login', methods=['GET', 'POST'])
 @with_cursor
 def login(cursor):
+    if 'username' in session:
+        session.clear()
+
     form = LoginForm()
     if form.validate_on_submit():
-        username = session['username'] = request.form['username']
+        username = request.form['username']
         password = request.form['password']
-        if dbutil.validate_user(cursor, username, password):
+        (validation_state, user_guid) = dbutil.validate_user(cursor, username, password)
+        print("after check", validation_state, user_guid)
+        if validation_state is None:
+            flash(Markup("""Before attempting to login, please look at your email for an account validation request.
+            
+            If you do not have the validation email, <a href="{0}">click here</a> to request a new validation email.""".
+                  format(url_for("request_validation", user_guid=user_guid))), "message")
+            print("Doing nothing")
+        elif validation_state:
+            # Validated and username/password match
+            session['username'] = username
+            dbutil.user_logged_in(cursor, username)
+
             return redirect(url_for('index'))
         else:
-            # TODO: Need to mark that username/password did not agree
-            pass
+            flash("Either the username is unknown, or the password did not match.  Please retry.", "error")
 
     return render_template('login.html', form=form)
+
+@app.route("/newValidation/<user_guid>")
+@with_cursor
+def request_validation(user_guid, cursor):
+    helpers.send_user_validation_email(cursor, user_guid)
+    flash("Please check your email for your validation link.  Select link in email to validate", "message")
+    return redirect(url_for("login"))
+
 
 @app.route('/')
 @logged_in
@@ -93,8 +116,6 @@ def sortLocations(order, locations):
             result.append(location)
 
     return [location for location in result if location]
-
-
 
 
 @app.route('/trip/<guid>')
@@ -384,6 +405,7 @@ def deleteTrip(guid, cursor):
 
     return redirect(url_for('index'))
 
+
 @app.route('/deleteGroup/<guid>', methods=['GET'])
 @logged_in
 @with_cursor
@@ -393,9 +415,35 @@ def deleteGroup(guid, cursor):
     return redirect(url_for('groups'))
 
 
-
 @app.route('/logout')
-@logged_in
 def logout():
-    session.pop('username')
+    session.clear()
+
     return redirect(url_for('login'))
+
+
+@app.route('/verify/<token>', methods=['GET', 'POST'])
+@with_cursor
+def verification(token, cursor):
+    # Logout if somehow this browser has a logged in user
+    if 'username' in session:
+        session.clear()
+
+    form = LoginForm()
+    if form.validate_on_submit():
+        username = request.form['username']
+        password = request.form['password']
+        (login_valid, guid) = dbutil.validate_user(cursor, username, password, token)
+        if login_valid:
+            session['username'] = username
+            flash("Your account is now verified.  Welcome!")
+            dbutil.user_is_verified(cursor, username)
+            return redirect(url_for('index'))
+        else:
+            flash("Either the entered username is unknown, or the password did not match.  Please retry.")
+
+    return render_template('verify.html', form=form, token=token)
+
+
+
+

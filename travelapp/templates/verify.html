@@ -6,23 +6,25 @@
 <body>
     {% from "formhelpers.html" import render_field %}
 
-    {% with messages = get_flashed_messages(category_filter=["message"]) %}
+    {% with messages = get_flashed_messages() %}
       {% if messages %}
       <ul class=flashes>
       {% for message in messages %}
-        <li>{{ message | safe }}</li>
+        <li>{{ message }}</li>
       {% endfor %}
       </ul>
       {% endif %}
     {% endwith %}
 
-    <form action="{{ url_for('login') }}" method=post>
+    Thank you for joining.  Please login to verify your account.
+
+    <form action="{{ url_for('verification', token=token) }}" method=post>
         {{ form.csrf_token }}
 
         <fieldset>
-            <legend>Login</legend>
+            <legend>New user verification</legend>
             <div>
-                {% for message in get_flashed_messages(category_filter=["error"]) %}
+                {% for message in get_flashed_messages() %}
                     <div class="error">{{ message }}</div>
                 {% endfor %}
                 {{ render_field(form.username) }}
@@ -31,12 +33,6 @@
                 <input type="submit"/>
             </div>
 
-        </fieldset>
-
-        <fieldset>
-            <legend>New User</legend>
-
-            <a href="{{ url_for('addUser')}}">Register as a new user.</a>
         </fieldset>
     </form>
 </body>

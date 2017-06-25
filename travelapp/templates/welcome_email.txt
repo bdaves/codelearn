@@ -1,0 +1,11 @@
+Welcome to {{travel_site.name}},
+
+Before you will be able to participate, we need to verify your email.
+
+Use the link below to verify your email address.
+
+{{url_for('verification', token=token)}}
+
+Thank you,
+
+{{travel_site.team_name}}
