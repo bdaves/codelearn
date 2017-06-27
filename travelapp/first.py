@@ -251,6 +251,9 @@ class UserForm(FlaskForm):
 @app.route('/newUser', methods=['GET', 'POST'])
 @with_cursor
 def addUser(cursor):
+    if 'username' in session:
+        session.pop('username')
+        
     form = UserForm()
     if form.validate_on_submit():
         firstname = form.firstname.data
@@ -262,15 +265,19 @@ def addUser(cursor):
         is_unique_username = dbutil.is_unique_username(cursor, username)
         is_unique_email = dbutil.is_unique_email(cursor, email)
 
-        if is_unique_username and is_unique_email:
+        is_valid_email_server = helpers.is_valid_email_server(email)
+
+        if is_unique_username and is_unique_email and is_valid_email_server:
             dbutil.insert_user(cursor, username, firstname, lastname, email, password)
 
-            return redirect(url_for('index'))
+            return redirect(url_for('login'))
         else:
             if not is_unique_username:
-                flash("username is already in use. Please select another one", 'username')
+                flash('This username is already in use. Please select another one', 'username')
             if not is_unique_email:
-                flash("this email already has an account linked to it", 'email')
+                flash('This email already has an account linked to it', 'email')
+            if not is_valid_email_server:
+                flash('Unable to confirm your email server is valid', 'email')
 
     return render_template('newUser.html', form=form)
 
@@ -433,7 +440,6 @@ def changeTripTitle(guid, cursor):
     dbutil.change_trip_title(cursor, guid, title)
 
     return redirect(url_for('trip', guid=guid))
-
 
 
 @app.route('/deleteGroup/<guid>', methods=['GET'])

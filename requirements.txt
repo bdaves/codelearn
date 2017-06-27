@@ -1,5 +1,5 @@
 Flask==0.12.2
 Flask-WTF==0.14.2
 PyMySQL==0.7.11
-SQLAlchemy==1.1.10
-
+SQLAlchemy==1.1.11
+dnspython==1.15.0
