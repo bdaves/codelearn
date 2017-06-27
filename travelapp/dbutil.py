@@ -593,6 +593,19 @@ def get_members(cursor, guid):
     return member_list
 
 
+def get_group_name(cursor, guid):
+    sql = """
+        SELECT name
+        FROM groups
+        WHERE guid = %s
+    """
+
+    cursor.execute(sql, guid)
+
+    name = cursor.fetchone()[0]
+
+    return name
+
 def is_unique_email(cursor, email):
     sql = """
         SELECT email

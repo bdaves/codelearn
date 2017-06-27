@@ -94,8 +94,9 @@ def groups(cursor):
 @logged_in
 @with_cursor
 def group(guid, cursor):
+    name = dbutil.get_trip_name(cursor, guid)
     members = dbutil.get_members(cursor, guid)
-    return render_template('group.html', members=members, guid=guid)
+    return render_template('group.html', members=members, guid=guid, group_name=name)
 
 
 def sortLocations(order, locations):
