@@ -1,13 +1,20 @@
 <!DOCTYPE html>
 <html>
 <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" type="text/css" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
     <title>Group Members</title>
 
     <script src="{{ url_for('static', filename='jquery-3.2.1.min.js')}}"></script>
     <script src="{{ url_for('static', filename='jquery-ui.min.js')}}"></script>
 
 <body>
-    <h3>{{group_name}}</h3>
+<div class="container-fluid well well-sm">
+    <div class="page-header">
+        <h3>{{group_name}}<small>
+    <button class=".btn-danger" onclick="confirmDelete()">Delete Group</button>
+    </small></h3>
+    </div>
     <ul>
     {% for member in members %}
         <li>
@@ -15,9 +22,11 @@
         </li>
     {% endfor %}
     </ul>
-    <a href="{{url_for('addToGroup2', guid=guid)}}">Add to your group!</a>
-    <button onclick="confirmDelete()">Delete Group</button>
     <a href="/groups">Back to Groups</a>
+    <a href="{{url_for('addToGroup2', guid=guid)}}">Add to your group!</a>
+    
+    
+</div>
 </body>
 <script>
 function confirmDelete() {

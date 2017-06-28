@@ -4,8 +4,9 @@
     <title>add people to your group</title>
 </head>
 <body>
+<div class="container-fluid well well-sm">
     {% from "formhelpers.html" import render_field %}
-    <form action="{{url_for('addToGroup2', guid=guid)}}" method=post>
+    <form action="{{url_for('addToGroup2', guid=guid) }}" method=post>
         {{ form.csrf_token }}
         <fieldset>
             <legend>Group Member Form</legend>
@@ -22,5 +23,6 @@
 
         </fieldset>
     </form>
+</div>
 </body>
 </html>

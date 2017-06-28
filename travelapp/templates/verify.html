@@ -1,9 +1,12 @@
 <!DOCTYPE html>
 <html>
 <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" type="text/css" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
     <title>Login</title>
 </head>
 <body>
+<div class="container-fluid well well-sm">
     {% from "formhelpers.html" import render_field %}
 
     {% with messages = get_flashed_messages() %}
@@ -35,5 +38,6 @@
 
         </fieldset>
     </form>
+</div>
 </body>
 </html>

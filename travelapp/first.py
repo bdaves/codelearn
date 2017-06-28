@@ -4,7 +4,7 @@ from wtforms import StringField, DecimalField, DateField, PasswordField, SelectF
 from wtforms.fields.html5 import URLField, EmailField
 from . import config as cfg
 from . import dbutil
-from . import helpers
+#from . import helpers
 import json
 from datetime import datetime, date
 
@@ -12,7 +12,7 @@ from .decorators import logged_in, with_cursor
 
 app = Flask(__name__)
 app.secret_key = "Development Key"
-app.config["SERVER_NAME"] = cfg.SERVER_NAME
+#app.config["SERVER_NAME"] = cfg.SERVER_NAME
 
 
 def has_permissions(cursor, group_guid, permissions):
@@ -94,7 +94,7 @@ def groups(cursor):
 @logged_in
 @with_cursor
 def group(guid, cursor):
-    name = dbutil.get_trip_name(cursor, guid)
+    name = dbutil.get_group_name(cursor, guid)
     members = dbutil.get_members(cursor, guid)
     return render_template('group.html', members=members, guid=guid, group_name=name)
 

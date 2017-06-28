@@ -1,18 +1,21 @@
 <!DOCTYPE html>
 <html>
 <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" type="text/css" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
     <title>New Location</title>
     <meta name="viewport" content="initial-scale=1.0, user-scalable=no">
     <meta charset="utf-8">
 </head>
 <body>
+<div class="container-fluid well well-sm">
     {% from "formhelpers.html" import render_field %}
     <form action="{{ url_for('addLocation', guid=form.trip_guid.data)}}" method=post>
         {{ form.csrf_token }}
         <fieldset>
             <legend>Location Form</legend>
 
-            <input id="autocomplete" placeholder="Enter your address"
+            <input id="autocomplete" placeholder="Enter an address"
             onFocus="geolocate()" type="text"></input>
 
             <div>
@@ -33,6 +36,7 @@
 
         </fieldset>
     </form>
+</div>
 
     <script>
         var autocomplete;
